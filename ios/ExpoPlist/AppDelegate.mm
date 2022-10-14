@@ -8,6 +8,8 @@
 
 #import <React/RCTAppSetupUtils.h>
 
+#import <RNShareMenu/ShareMenuManager.h>
+
 #if RCT_NEW_ARCH_ENABLED
 #import <React/CoreModulesPlugins.h>
 #import <React/RCTCxxBridgeDelegate.h>
@@ -97,7 +99,7 @@ static NSString *const kRNConcurrentRoot = @"concurrentRoot";
 
 // Linking API
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-  return [RCTLinkingManager application:application openURL:url options:options];
+  return [ShareMenuManager application:application openURL:url options:options];
 }
 
 // Universal Links

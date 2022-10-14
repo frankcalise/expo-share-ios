@@ -14,7 +14,7 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		65B118BB28F8F9990047C387 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 65B118B928F8F9990047C387 /* MainInterface.storyboard */; };
 		65B118BF28F8F9990047C387 /* HelloWorldShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 65B118B528F8F9990047C387 /* HelloWorldShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		65B118C628F8F9E90047C387 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B118C528F8F9E90047C387 /* ShareViewController.swift */; };
+		65B118C828F8FCC00047C387 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B118C728F8FCC00047C387 /* ShareViewController.swift */; };
 		96905EF65AED1B983A6B3ABC /* libPods-ExpoPlist.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-ExpoPlist.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
@@ -61,7 +61,7 @@
 		65B118BA28F8F9990047C387 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
 		65B118BC28F8F9990047C387 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		65B118C428F8F9E80047C387 /* HelloWorldShare-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "HelloWorldShare-Bridging-Header.h"; sourceTree = "<group>"; };
-		65B118C528F8F9E90047C387 /* ShareViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ShareViewController.swift; path = "../../node_modules/react-native-share-menu/ios/ShareViewController.swift"; sourceTree = "<group>"; };
+		65B118C728F8FCC00047C387 /* ShareViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ShareViewController.swift; path = "../../node_modules/react-native-share-menu/ios/ShareViewController.swift"; sourceTree = "<group>"; };
 		6C2E3173556A471DD304B334 /* Pods-ExpoPlist.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoPlist.debug.xcconfig"; path = "Target Support Files/Pods-ExpoPlist/Pods-ExpoPlist.debug.xcconfig"; sourceTree = "<group>"; };
 		7A4D352CD337FB3A3BF06240 /* Pods-ExpoPlist.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoPlist.release.xcconfig"; path = "Target Support Files/Pods-ExpoPlist/Pods-ExpoPlist.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = ExpoPlist/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -120,7 +120,7 @@
 		65B118B628F8F9990047C387 /* HelloWorldShare */ = {
 			isa = PBXGroup;
 			children = (
-				65B118C528F8F9E90047C387 /* ShareViewController.swift */,
+				65B118C728F8FCC00047C387 /* ShareViewController.swift */,
 				65B118B928F8F9990047C387 /* MainInterface.storyboard */,
 				65B118BC28F8F9990047C387 /* Info.plist */,
 				65B118C428F8F9E80047C387 /* HelloWorldShare-Bridging-Header.h */,
@@ -434,7 +434,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				65B118C628F8F9E90047C387 /* ShareViewController.swift in Sources */,
+				65B118C828F8FCC00047C387 /* ShareViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
