@@ -3,6 +3,7 @@
     "name": "ExpoPlist",
     "slug": "ExpoPlist",
     "version": "1.0.0",
+    "scheme": "com.frankcalise.expoplist",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,9 +15,7 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.frankcalise.expoplist"
