@@ -37,10 +37,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.getProjectShareMenuName = void 0;
-var generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
 var config_plugins_1 = require("@expo/config-plugins");
+var generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
+var config_plugins_2 = require("@expo/config-plugins");
 var fs = require("fs");
 var path = require("path");
+var withShareMenuAndroid_1 = require("./withShareMenuAndroid");
 // constants
 var SHARE_MENU_TAG = "react-native-share-menu";
 // TODO make anchor take in the project name
@@ -74,22 +76,74 @@ var removeTaggedContent = function (contents, ns) {
     return (0, generateCode_1.removeContents)({ src: contents, tag: tag(ns) });
 };
 // main plugin
-var withReactNativeShareMenu = function (config) {
-    config = withShareMenuEntitlements(config);
-    config = withShareMenuInfoPlist(config);
-    config = withShareMenuPodfile(config);
+var withReactNativeShareMenu = function (config, props) {
+    config = (0, withShareMenuAndroid_1.withShareMenuAndroid)(config, props);
+    config = withShareMenuIos(config, props);
     return config;
 };
-// modifiers
-// android
-// withAndroidManifest(expoConfig, async (modConfig) => {
-//   let androidManifest = modConfig.modResults.manifest;
-//   androidManifest.application.ac
-//   return modConfig;
-// }
-// ios
+var withShareMenuIos = function (config, props) {
+    config = withShareMenuEntitlements(config);
+    config = withShareMenuInfoPlist(config);
+    // config = withShareMenuPodfile(config);
+    config = withShareMenuAppDelegate(config);
+    return config;
+};
+// this gives TS error?
+// const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
+function addShareMenuAppDelegateImport(src) {
+    return (0, generateCode_1.mergeContents)({
+        tag: "Import",
+        src: src,
+        newSrc: "#import <RNShareMenu/ShareMenuManager.h>",
+        anchor: /#import <React\/RCTAppSetupUtils\.h>/,
+        offset: 1,
+        comment: "//"
+    });
+}
+function addShareMenuAppDelegateLinkingAPI(src) {
+    // TODO Only does an insert, needed replace, better way to do this?
+    // return mergeContents({
+    //   tag: "LinkingAPI",
+    //   src,
+    //   newSrc:
+    //     "return [super application:application openURL:url options:options] || [ShareMenuManager application:application openURL:url options:options];",
+    //   anchor:
+    //     /return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];/,
+    //   offset: 0,
+    //   comment: "//",
+    // });
+    // Obviously fragile - need AppDelegate proxy via wrapper package?
+    // https://docs.expo.dev/guides/config-plugins/#ios-app-delegate
+    var findString = "return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];";
+    var replaceString = "return [ShareMenuManager application:application openURL:url options:options];";
+    return {
+        contents: src.replace(findString, replaceString),
+        didClear: false,
+        didMerge: true
+    };
+}
+var withShareMenuAppDelegate = function (config) {
+    return (0, config_plugins_1.withAppDelegate)(config, function (config) {
+        if (["objc", "objcpp"].includes(config.modResults.language)) {
+            try {
+                config.modResults.contents = addShareMenuAppDelegateImport(config.modResults.contents).contents;
+                config.modResults.contents = addShareMenuAppDelegateLinkingAPI(config.modResults.contents).contents;
+            }
+            catch (error) {
+                if (error.code === "ERR_NO_MATCH") {
+                    throw new Error("Cannot add Share Menu to the project's AppDelegate because it's malformed. Please report this with a copy of your project AppDelegate.");
+                }
+                throw error;
+            }
+        }
+        else {
+            throw new Error("Cannot setup Share Menu because the AppDelegate is not Objective C");
+        }
+        return config;
+    });
+};
 var withShareMenuEntitlements = function (config) {
-    return (0, config_plugins_1.withEntitlementsPlist)(config, function (config) {
+    return (0, config_plugins_2.withEntitlementsPlist)(config, function (config) {
         var _a;
         config.modResults["com.apple.security.application-groups"] = [
             "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
@@ -98,7 +152,7 @@ var withShareMenuEntitlements = function (config) {
     });
 };
 var withShareMenuInfoPlist = function (config) {
-    return (0, config_plugins_1.withInfoPlist)(config, function (config) {
+    return (0, config_plugins_2.withInfoPlist)(config, function (config) {
         var plistItems = {
             CFBundleTypeRole: "editor",
             CFBundleURLSchemes: ["$(PRODUCT_BUNDLE_IDENTIFIER)"]
@@ -108,7 +162,7 @@ var withShareMenuInfoPlist = function (config) {
     });
 };
 var withShareMenuPodfile = function (config) {
-    return (0, config_plugins_1.withDangerousMod)(config, [
+    return (0, config_plugins_2.withDangerousMod)(config, [
         "ios",
         function (config) { return __awaiter(void 0, void 0, void 0, function () {
             var filePath, contents, results, preexisting;
@@ -116,7 +170,8 @@ var withShareMenuPodfile = function (config) {
                 filePath = path.join(config.modRequest.platformProjectRoot, "Podfile");
                 contents = fs.readFileSync(filePath, "utf-8");
                 results = [];
-                results.push(removeTaggedContent(contents, "urn"));
+                results.push(removeTaggedContent(contents, "BuildSettings"));
+                results.push(removeTaggedContent(contents, "ShareTarget"));
                 preexisting = IOS_HAS_SHARE_MENU_TARGET.test(last(results).contents);
                 if (!preexisting) {
                     results.push((0, generateCode_1.mergeContents)({

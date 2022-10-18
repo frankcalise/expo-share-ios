@@ -1,4 +1,4 @@
-import type { ConfigPlugin } from "@expo/config-plugins";
+import { ConfigPlugin, withAppDelegate } from "@expo/config-plugins";
 import plist from "@expo/plist";
 import {
   mergeContents,
@@ -6,7 +6,6 @@ import {
   removeContents,
 } from "@expo/config-plugins/build/utils/generateCode";
 import {
-  withAndroidManifest,
   withEntitlementsPlist,
   InfoPlist,
   withDangerousMod,
@@ -16,6 +15,7 @@ import {
 
 import * as fs from "fs";
 import * as path from "path";
+import { withShareMenuAndroid } from "./withShareMenuAndroid";
 
 // constants
 const SHARE_MENU_TAG = "react-native-share-menu";
@@ -58,27 +58,88 @@ const removeTaggedContent = (contents: string, ns: string) => {
 };
 
 // main plugin
-const withReactNativeShareMenu: ConfigPlugin = (config) => {
-  config = withShareMenuEntitlements(config);
-  config = withShareMenuInfoPlist(config);
-  config = withShareMenuPodfile(config);
+const withReactNativeShareMenu: ConfigPlugin = (config, props) => {
+  config = withShareMenuAndroid(config, props);
+  config = withShareMenuIos(config, props);
 
   return config;
 };
 
-// modifiers
+const withShareMenuIos: ConfigPlugin = (config, props) => {
+  config = withShareMenuEntitlements(config);
+  config = withShareMenuInfoPlist(config);
+  // config = withShareMenuPodfile(config);
+  config = withShareMenuAppDelegate(config);
 
-// android
+  return config;
+};
 
-// withAndroidManifest(expoConfig, async (modConfig) => {
-//   let androidManifest = modConfig.modResults.manifest;
+// this gives TS error?
+// const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
+function addShareMenuAppDelegateImport(src: string): MergeResults {
+  return mergeContents({
+    tag: "Import",
+    src,
+    newSrc: "#import <RNShareMenu/ShareMenuManager.h>",
+    anchor: /#import <React\/RCTAppSetupUtils\.h>/,
+    offset: 1,
+    comment: "//",
+  });
+}
 
-//   androidManifest.application.ac
+function addShareMenuAppDelegateLinkingAPI(src: string): MergeResults {
+  // TODO Only does an insert, needed replace, better way to do this?
+  // return mergeContents({
+  //   tag: "LinkingAPI",
+  //   src,
+  //   newSrc:
+  //     "return [super application:application openURL:url options:options] || [ShareMenuManager application:application openURL:url options:options];",
+  //   anchor:
+  //     /return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];/,
+  //   offset: 0,
+  //   comment: "//",
+  // });
 
-//   return modConfig;
-// }
+  // Obviously fragile - need AppDelegate proxy via wrapper package?
+  // https://docs.expo.dev/guides/config-plugins/#ios-app-delegate
+  const findString =
+    "return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];";
+  const replaceString =
+    "return [ShareMenuManager application:application openURL:url options:options];";
 
-// ios
+  return {
+    contents: src.replace(findString, replaceString),
+    didClear: false,
+    didMerge: true,
+  };
+}
+
+const withShareMenuAppDelegate: ConfigPlugin = (config) => {
+  return withAppDelegate(config, (config) => {
+    if (["objc", "objcpp"].includes(config.modResults.language)) {
+      try {
+        config.modResults.contents = addShareMenuAppDelegateImport(
+          config.modResults.contents
+        ).contents;
+        config.modResults.contents = addShareMenuAppDelegateLinkingAPI(
+          config.modResults.contents
+        ).contents;
+      } catch (error: any) {
+        if (error.code === "ERR_NO_MATCH") {
+          throw new Error(
+            `Cannot add Share Menu to the project's AppDelegate because it's malformed. Please report this with a copy of your project AppDelegate.`
+          );
+        }
+        throw error;
+      }
+    } else {
+      throw new Error(
+        "Cannot setup Share Menu because the AppDelegate is not Objective C"
+      );
+    }
+    return config;
+  });
+};
 
 const withShareMenuEntitlements: ConfigPlugin = (config) => {
   return withEntitlementsPlist(config, (config) => {
@@ -111,10 +172,11 @@ const withShareMenuPodfile: ConfigPlugin = (config) => {
       );
       const contents = fs.readFileSync(filePath, "utf-8");
 
-      // #3 We cannot tell if a merge failed because of a malformed podfile or it was a noop
+      // We cannot tell if a merge failed because of a malformed Podfile or it was a noop
       // so instead, remove the content first, then attempt the insert
       const results: MergeResults[] = [];
-      results.push(removeTaggedContent(contents, "urn"));
+      results.push(removeTaggedContent(contents, "BuildSettings"));
+      results.push(removeTaggedContent(contents, "ShareTarget"));
 
       // Check to see if it block already exists
       const preexisting = IOS_HAS_SHARE_MENU_TARGET.test(
