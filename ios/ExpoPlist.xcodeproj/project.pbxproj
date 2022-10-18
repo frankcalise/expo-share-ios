@@ -62,6 +62,7 @@
 		65B118BC28F8F9990047C387 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		65B118C428F8F9E80047C387 /* HelloWorldShare-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "HelloWorldShare-Bridging-Header.h"; sourceTree = "<group>"; };
 		65B118C728F8FCC00047C387 /* ShareViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ShareViewController.swift; path = "../../node_modules/react-native-share-menu/ios/ShareViewController.swift"; sourceTree = "<group>"; };
+		65B118C928F912D50047C387 /* HelloWorldShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HelloWorldShare.entitlements; sourceTree = "<group>"; };
 		6C2E3173556A471DD304B334 /* Pods-ExpoPlist.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoPlist.debug.xcconfig"; path = "Target Support Files/Pods-ExpoPlist/Pods-ExpoPlist.debug.xcconfig"; sourceTree = "<group>"; };
 		7A4D352CD337FB3A3BF06240 /* Pods-ExpoPlist.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoPlist.release.xcconfig"; path = "Target Support Files/Pods-ExpoPlist/Pods-ExpoPlist.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = ExpoPlist/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -120,6 +121,7 @@
 		65B118B628F8F9990047C387 /* HelloWorldShare */ = {
 			isa = PBXGroup;
 			children = (
+				65B118C928F912D50047C387 /* HelloWorldShare.entitlements */,
 				65B118C728F8FCC00047C387 /* ShareViewController.swift */,
 				65B118B928F8F9990047C387 /* MainInterface.storyboard */,
 				65B118BC28F8F9990047C387 /* Info.plist */,
@@ -251,10 +253,12 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = 2F256P93SR;
 						LastSwiftMigration = 1250;
 					};
 					65B118B428F8F9990047C387 = {
 						CreatedOnToolsVersion = 14.0;
+						DevelopmentTeam = 2F256P93SR;
 						LastSwiftMigration = 1400;
 						ProvisioningStyle = Automatic;
 					};
@@ -469,6 +473,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = ExpoPlist/ExpoPlist.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F256P93SR;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -501,6 +506,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = ExpoPlist/ExpoPlist.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2F256P93SR;
 				INFOPLIST_FILE = ExpoPlist/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -530,9 +536,11 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = HelloWorldShare/HelloWorldShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 2F256P93SR;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HelloWorldShare/Info.plist;
@@ -568,10 +576,12 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = HelloWorldShare/HelloWorldShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 2F256P93SR;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HelloWorldShare/Info.plist;

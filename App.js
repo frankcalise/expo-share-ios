@@ -11,14 +11,8 @@ export default function App() {
     if (!item) {
       return;
     }
-
-    const { mimeType, data, extraData } = item;
-
-    setSharedData(data);
-    setSharedMimeType(mimeType);
-    // You can receive extra data from your custom Share View
-    console.log(item);
-    console.log(extraData);
+    setSharedData(item?.data?.[0]?.data ?? "");
+    setSharedMimeType(item?.data?.[0]?.mimeType ?? "");
   }, []);
 
   useEffect(() => {
@@ -33,6 +27,8 @@ export default function App() {
     };
   }, []);
 
+  console.log({ sharedData, sharedMimeType });
+
   if (!sharedMimeType && !sharedData) {
     // The user hasn't shared anything yet
     return null;
@@ -40,15 +36,9 @@ export default function App() {
 
   if (sharedMimeType === "text/plain") {
     // The user shared text
-    return <Text>Shared text: {sharedData}</Text>;
-  }
-
-  if (sharedMimeType.startsWith("image/")) {
-    // The user shared an image
     return (
-      <View>
-        <Text>Shared image:</Text>
-        <Image source={{ uri: sharedData }} />
+      <View style={styles.container}>
+        <Text>Shared text: {sharedData}</Text>
       </View>
     );
   }
