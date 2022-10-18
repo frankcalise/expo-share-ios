@@ -29,6 +29,8 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["./plugin/withReactNativeShareMenu.js"]
+    "plugins": [
+      ["./plugin/withReactNativeShareMenu.js", { "devTeam": "XYZ_DEVTEAM" }]
+    ]
   }
 }

@@ -1,6 +1,10 @@
 import type { ConfigPlugin } from "@expo/config-plugins";
+import type { ShareMenuPluginProps } from "./withReactNativeShareMenu";
 
-export const withShareMenuAndroid: ConfigPlugin = (config, props) => {
+export const withShareMenuAndroid: ConfigPlugin<ShareMenuPluginProps> = (
+  config,
+  props
+) => {
   config = withShareMenuManifest(config);
 
   return config;

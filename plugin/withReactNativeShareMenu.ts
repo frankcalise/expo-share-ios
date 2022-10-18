@@ -1,4 +1,9 @@
-import { ConfigPlugin, withAppDelegate } from "@expo/config-plugins";
+import {
+  ConfigPlugin,
+  withAppDelegate,
+  withXcodeProject,
+  XcodeProject,
+} from "@expo/config-plugins";
 import plist from "@expo/plist";
 import {
   mergeContents,
@@ -11,12 +16,32 @@ import {
   withDangerousMod,
   withInfoPlist,
 } from "@expo/config-plugins";
-
+import xcode from "xcode";
 import * as fs from "fs";
 import * as path from "path";
 import { withShareMenuAndroid } from "./withShareMenuAndroid";
+import { ExpoConfig } from "@expo/config-types";
+
+// types
+export type ShareMenuPluginProps = {
+  // (iOS only) Environment name and bundle identifier
+  devTeam: string;
+  iPhoneDeploymentTarget: string;
+};
+
+type PluginOptions = {
+  iosPath: string;
+  devTeam?: string;
+  bundleVersion?: string;
+  bundleShortVersion?: string;
+  bundleIdentifier?: string;
+  iPhoneDeploymentTarget?: string;
+};
 
 // constants
+const IPHONEOS_DEPLOYMENT_TARGET = "12.4";
+const TARGETED_DEVICE_FAMILY = "1,2";
+const NSE_TARGET_NAME = "ShareMenu";
 const SHARE_MENU_TAG = "react-native-share-menu";
 // TODO make anchor take in the project name
 const IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
@@ -57,14 +82,20 @@ const removeTaggedContent = (contents: string, ns: string) => {
 };
 
 // main plugin
-const withReactNativeShareMenu: ConfigPlugin = (config, props) => {
+const withReactNativeShareMenu: ConfigPlugin<ShareMenuPluginProps> = (
+  config,
+  props
+) => {
   config = withShareMenuAndroid(config, props);
   config = withShareMenuIos(config, props);
 
   return config;
 };
 
-const withShareMenuIos: ConfigPlugin = (config, props) => {
+const withShareMenuIos: ConfigPlugin<ShareMenuPluginProps> = (
+  config,
+  props
+) => {
   // main iOS target
   config = withShareMenuEntitlements(config);
   config = withShareMenuInfoPlist(config);
@@ -72,14 +103,180 @@ const withShareMenuIos: ConfigPlugin = (config, props) => {
   config = withShareMenuAppDelegate(config);
 
   // share extension target
-  // config = withShareMenuExtTarget(config);
-  // config = withShareMenuExtEntitlements(config);
-  // config = withShareMenuExtInfoPlist(config);
+  config = withShareMenuExtensionTarget(config, props);
+  // config = withShareMenuExtensionEntitlements(config);
+  // config = withShareMenuExtensionInfoPlist(config);
 
   return config;
 };
 
-// this gives TS error?
+const withShareMenuExtensionTarget: ConfigPlugin<ShareMenuPluginProps> = (
+  config,
+  shareMenuProps
+) => {
+  return withXcodeProject(config, async (config) => {
+    const options: PluginOptions = {
+      iosPath: config.modRequest.platformProjectRoot,
+      bundleIdentifier: config.ios?.bundleIdentifier,
+      devTeam: shareMenuProps?.devTeam,
+      bundleVersion: config.ios?.buildNumber,
+      bundleShortVersion: config?.version,
+      iPhoneDeploymentTarget: shareMenuProps?.iPhoneDeploymentTarget,
+    };
+
+    // support for monorepos where node_modules can be up to 5 parents
+    // above the project directory.
+    // let dir = "node_modules";
+    // for (let x = 0; x < 5 && !FileManager.dirExists(dir); x++) {
+    //   dir = "../" + dir;
+    // }
+    addShareMenuExtension(
+      config.modRequest.projectName || "",
+      options,
+      "./extensionFiles"
+    );
+
+    return config;
+  });
+};
+
+const addShareMenuExtension = (
+  appName: string,
+  options: PluginOptions,
+  sourceDir: string
+) => {
+  const {
+    iosPath,
+    devTeam,
+    bundleIdentifier,
+    bundleVersion,
+    bundleShortVersion,
+    iPhoneDeploymentTarget,
+  } = options;
+  const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
+  console.log(`\treact-native-share-menu-expo-plugin: ${projPath}`);
+
+  const extFiles = ["ShareMenu.entitlements", `Info.plist`];
+
+  const xcodeProject = xcode.project(projPath);
+
+  // xcodeProject.parse(async function (err: Error) {
+  //   if (err) {
+  //     console.log(`\tError parsing iOS project: ${JSON.stringify(err)}`);
+  //     return;
+  //   }
+
+  //   /* COPY OVER EXTENSION FILES */
+  //   fs.mkdirSync(`${iosPath}/${NSE_TARGET_NAME}`, { recursive: true });
+
+  //   for (let i = 0; i < extFiles.length; i++) {
+  //     const extFile = extFiles[i];
+  //     const targetFile = `${iosPath}/${NSE_TARGET_NAME}/${extFile}`;
+  //     await FileManager.copyFile(`${sourceDir}${extFile}`, targetFile);
+  //   }
+
+  //   // will happen in withShareMenuIos following withShareMenuExtensionTarget
+  //   // /* MODIFY COPIED EXTENSION FILES */
+  //   // const nseUpdater = new NseUpdaterManager(iosPath);
+  //   // await nseUpdater.updateNSEEntitlements(
+  //   //   `group.${bundleIdentifier}.onesignal`
+  //   // );
+  //   // await nseUpdater.updateNSEBundleVersion(
+  //   //   bundleVersion ?? DEFAULT_BUNDLE_VERSION
+  //   // );
+  //   // await nseUpdater.updateNSEBundleShortVersion(
+  //   //   bundleShortVersion ?? DEFAULT_BUNDLE_SHORT_VERSION
+  //   // );
+
+  //   // Create new PBXGroup for the extension
+  //   const extGroup = xcodeProject.addPbxGroup(
+  //     extFiles,
+  //     NSE_TARGET_NAME,
+  //     NSE_TARGET_NAME
+  //   );
+
+  //   // Add the new PBXGroup to the top level group. This makes the
+  //   // files / folder appear in the file explorer in Xcode.
+  //   const groups = xcodeProject.hash.project.objects["PBXGroup"];
+  //   Object.keys(groups).forEach(function (key) {
+  //     if (groups[key].name === undefined) {
+  //       xcodeProject.addToPbxGroup(extGroup.uuid, key);
+  //     }
+  //   });
+
+  //   // WORK AROUND for codeProject.addTarget BUG
+  //   // Xcode projects don't contain these if there is only one target
+  //   // An upstream fix should be made to the code referenced in this link:
+  //   //   - https://github.com/apache/cordova-node-xcode/blob/8b98cabc5978359db88dc9ff2d4c015cba40f150/lib/pbxProject.js#L860
+  //   const projObjects = xcodeProject.hash.project.objects;
+  //   projObjects["PBXTargetDependency"] =
+  //     projObjects["PBXTargetDependency"] || {};
+  //   projObjects["PBXContainerItemProxy"] =
+  //     projObjects["PBXTargetDependency"] || {};
+
+  //   if (!!xcodeProject.pbxTargetByName(NSE_TARGET_NAME)) {
+  //     throw new Error(
+  //       `${NSE_TARGET_NAME} already exists in project. Skipping...`
+  //     );
+  //   }
+
+  //   // Add the NSE target
+  //   // This adds PBXTargetDependency and PBXContainerItemProxy for you
+  //   const nseTarget = xcodeProject.addTarget(
+  //     NSE_TARGET_NAME,
+  //     "app_extension",
+  //     NSE_TARGET_NAME,
+  //     `${bundleIdentifier}.${NSE_TARGET_NAME}`
+  //   );
+
+  //   // Add build phases to the new target
+  //   xcodeProject.addBuildPhase(
+  //     ["NotificationService.m"],
+  //     "PBXSourcesBuildPhase",
+  //     "Sources",
+  //     nseTarget.uuid
+  //   );
+  //   xcodeProject.addBuildPhase(
+  //     [],
+  //     "PBXResourcesBuildPhase",
+  //     "Resources",
+  //     nseTarget.uuid
+  //   );
+
+  //   xcodeProject.addBuildPhase(
+  //     [],
+  //     "PBXFrameworksBuildPhase",
+  //     "Frameworks",
+  //     nseTarget.uuid
+  //   );
+
+  //   // Edit the Deployment info of the new Target, only IphoneOS and Targeted Device Family
+  //   // However, can be more
+  //   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
+  //   for (const key in configurations) {
+  //     if (
+  //       typeof configurations[key].buildSettings !== "undefined" &&
+  //       configurations[key].buildSettings.PRODUCT_NAME == `"${NSE_TARGET_NAME}"`
+  //     ) {
+  //       const buildSettingsObj = configurations[key].buildSettings;
+  //       buildSettingsObj.DEVELOPMENT_TEAM = devTeam;
+  //       buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET =
+  //         iPhoneDeploymentTarget ?? IPHONEOS_DEPLOYMENT_TARGET;
+  //       buildSettingsObj.TARGETED_DEVICE_FAMILY = TARGETED_DEVICE_FAMILY;
+  //       buildSettingsObj.CODE_SIGN_ENTITLEMENTS = `${NSE_TARGET_NAME}/${NSE_TARGET_NAME}.entitlements`;
+  //       buildSettingsObj.CODE_SIGN_STYLE = "Automatic";
+  //     }
+  //   }
+
+  //   // Add development teams to both your target and the original project
+  //   xcodeProject.addTargetAttribute("DevelopmentTeam", devTeam, nseTarget);
+  //   xcodeProject.addTargetAttribute("DevelopmentTeam", devTeam);
+
+  //   fs.writeFileSync(projPath, xcodeProject.writeSync());
+  // });
+};
+
+// this gives TS error? change to function signature
 // const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
 function addShareMenuAppDelegateImport(src: string): MergeResults {
   return mergeContents({
@@ -107,6 +304,9 @@ function addShareMenuAppDelegateLinkingAPI(src: string): MergeResults {
 
   // Obviously fragile - need AppDelegate proxy via wrapper package?
   // https://docs.expo.dev/guides/config-plugins/#ios-app-delegate
+
+  // Although this method seems to be used here
+  // https://github.com/bndkt/react-native-app-clip/blob/main/src/withAppClipAppDelegate.ts#L65
   const findString =
     "return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];";
   const replaceString =
@@ -245,11 +445,16 @@ const withShareMenuPodfile: ConfigPlugin = (config) => {
   ]);
 };
 
-const withShareMenuExtEntitlements: ConfigPlugin = (config) => {
-  return config;
+const withShareMenuExtensionEntitlements: ConfigPlugin = (config) => {
+  return withEntitlementsPlist(config, (config) => {
+    config.modResults["com.apple.security.application-groups"] = [
+      `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
+    ];
+    return config;
+  });
 };
 
-const withShareMenuExtInfoPlist: ConfigPlugin = (config) => {
+const withShareMenuExtensionInfoPlist: ConfigPlugin = (config) => {
   return withDangerousMod(config, [
     "ios",
     async (config) => {
@@ -287,103 +492,37 @@ const withShareMenuExtInfoPlist: ConfigPlugin = (config) => {
 
 export default withReactNativeShareMenu;
 
-/*
-Function
-config = XCodeProject config
-targetName: String = name of the new target
-iphoneOsTarget: String = iPhone OS to target, incl. decimal point. e.g. "10.0"
-devicesTargeted: String = Which devices are targeted (iPhone, iPad or Mac), e.g. "1,2" for iPhone and iPad
- */
-// function withAddXcodeTarget(
-//   config,
-//   targetName,
-//   iphoneOSTarget,
-//   devicesTargeted,
-//   bundleId,
-//   bundleVersion,
-//   devTeam
-// ) {
-//   const appName = config.modRequest.projectName;
-//   const iosPath = config.modRequest.platformProjectRoot;
+class FileManager {
+  static async readFile(path: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      fs.readFile(path, "utf8", (err, data) => {
+        if (err || !data) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    });
+  }
 
-//   const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
-//   const extName = targetName;
-//   const extFiles = [
-//     "NotificationService.h",
-//     "NotificationService.m",
-//     `${extName}-Info.plist`,
-//     `${extName}.entitlements`,
-//   ];
-//   // The directory where the source extension files are stored
-//   const sourceDir = `./plugins/${extName}/`;
+  static async writeFile(path: string, contents: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      fs.writeFile(path, contents, "utf8", (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
 
-//   let proj = xcode.project(projPath);
-//   proj.parse(function (err) {
-//     if (err) {
-//       console.log(`Error parsing iOS project: ${err}`);
-//     }
-//     // Copy in the extension files
-//     fs.mkdirSync(`${iosPath}/${extName}`, { recursive: true });
-//     extFiles.forEach(function (extFile) {
-//       let targetFile = `${iosPath}/${extName}/${extFile}`;
+  static async copyFile(path1: string, path2: string): Promise<void> {
+    const fileContents = await FileManager.readFile(path1);
+    await FileManager.writeFile(path2, fileContents);
+  }
 
-//       try {
-//         fs.createReadStream(`${sourceDir}${extFile}`).pipe(
-//           fs.createWriteStream(targetFile)
-//         );
-//       } catch (err) {
-//         console.log(err);
-//       }
-//     });
-//     // Create new PBXGroup for the extension
-//     let extGroup = proj.addPbxGroup(extFiles, extName, extName);
-
-//     // Add the new PBXGroup to the top level group. This makes the
-//     // files / folder appear in the file explorer in Xcode.
-//     let groups = proj.hash.project.objects["PBXGroup"];
-//     Object.keys(groups).forEach(function (key) {
-//       if (groups[key].name === undefined) {
-//         proj.addToPbxGroup(extGroup.uuid, key);
-//       }
-//     });
-
-//     // Add a target for the extension
-//     let target = proj.addTarget(extName, "app_extension", extName, bundleId);
-
-//     // Add build phases to the new target
-//     proj.addBuildPhase(
-//       ["NotificationService.m"],
-//       "PBXSourcesBuildPhase",
-//       "Sources",
-//       target.uuid
-//     );
-//     proj.addBuildPhase([], "PBXResourcesBuildPhase", "Resources", target.uuid);
-//     proj.addBuildPhase(
-//       [],
-//       "PBXFrameworksBuildPhase",
-//       "Frameworks",
-//       target.uuid
-//     );
-
-//     // Edit the Deployment info of the new Target, only IphoneOS and Targeted Device Family
-//     // However, can be more
-//     let configurations = proj.pbxXCBuildConfigurationSection();
-//     for (let key in configurations) {
-//       if (
-//         typeof configurations[key].buildSettings !== "undefined" &&
-//         configurations[key].buildSettings.PRODUCT_NAME == `"${extName}"`
-//       ) {
-//         let buildSettingsObj = configurations[key].buildSettings;
-//         buildSettingsObj.DEVELOPMENT_TEAM = devTeam;
-//         buildSettingsObj.IPHONEOS_DEPLOYMENT_TARGET = iphoneOSTarget;
-//         buildSettingsObj.TARGETED_DEVICE_FAMILY = `"${devicesTargeted}"`;
-//       }
-//     }
-
-//     // Add development teams to both your target and the original project
-//     proj.addTargetAttribute("DevelopmentTeam", devTeam, target);
-//     proj.addTargetAttribute("DevelopmentTeam", devTeam);
-
-//     fs.writeFileSync(projPath, proj.writeSync());
-//   });
-// }
+  static dirExists(path: string): boolean {
+    return fs.existsSync(path);
+  }
+}
