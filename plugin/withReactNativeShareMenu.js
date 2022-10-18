@@ -38,6 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 exports.getProjectShareMenuName = void 0;
 var config_plugins_1 = require("@expo/config-plugins");
+var plist_1 = require("@expo/plist");
 var generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
 var config_plugins_2 = require("@expo/config-plugins");
 var fs = require("fs");
@@ -82,10 +83,15 @@ var withReactNativeShareMenu = function (config, props) {
     return config;
 };
 var withShareMenuIos = function (config, props) {
+    // main iOS target
     config = withShareMenuEntitlements(config);
     config = withShareMenuInfoPlist(config);
     // config = withShareMenuPodfile(config);
     config = withShareMenuAppDelegate(config);
+    // share extension target
+    // config = withShareMenuExtTarget(config);
+    // config = withShareMenuExtEntitlements(config);
+    // config = withShareMenuExtInfoPlist(config);
     return config;
 };
 // this gives TS error?
@@ -214,38 +220,46 @@ var withShareMenuPodfile = function (config) {
         }); },
     ]);
 };
-// const withShareMenuExtInfoPlist: ConfigPlugin = (config) => {
-//   return withDangerousMod(config, [
-//     "ios",
-//     async (config) => {
-//       const shareMenuExtName = getProjectShareMenuName(
-//         config.modRequest.projectName!
-//       );
-//       const shareMenuRootPath = path.join(
-//         config.modRequest.platformProjectRoot,
-//         shareMenuExtName
-//       );
-//       const filePath = path.join(shareMenuRootPath, "Info.plist");
-//       const shareMenu: InfoPlist = {
-//         HostAppBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)",
-//         HostAppURLScheme: "$(PRODUCT_BUNDLE_IDENTIFIER)://",
-//         NSExtension: {
-//           NSExtensionAttributes: [
-//             {
-//               NSExtensionActivationRule: [
-//                 { NSExtensionActivationSupportsText: true },
-//                 { NSExtensionActivationSupportsWebURLWithMaxCount: 1 },
-//               ],
-//             },
-//           ],
-//         },
-//       };
-//       await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-//       await fs.promises.writeFile(filePath, plist.build(shareMenu));
-//       return config;
-//     },
-//   ]);
-// };
+var withShareMenuExtEntitlements = function (config) {
+    return config;
+};
+var withShareMenuExtInfoPlist = function (config) {
+    return (0, config_plugins_2.withDangerousMod)(config, [
+        "ios",
+        function (config) { return __awaiter(void 0, void 0, void 0, function () {
+            var shareMenuExtName, shareMenuRootPath, filePath, shareMenu;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        shareMenuExtName = getProjectShareMenuName(config.modRequest.projectName);
+                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, shareMenuExtName);
+                        filePath = path.join(shareMenuRootPath, "Info.plist");
+                        shareMenu = {
+                            HostAppBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)",
+                            HostAppURLScheme: "$(PRODUCT_BUNDLE_IDENTIFIER)://",
+                            NSExtension: {
+                                NSExtensionAttributes: [
+                                    {
+                                        NSExtensionActivationRule: [
+                                            { NSExtensionActivationSupportsText: true },
+                                            { NSExtensionActivationSupportsWebURLWithMaxCount: 1 },
+                                        ]
+                                    },
+                                ]
+                            }
+                        };
+                        return [4 /*yield*/, fs.promises.mkdir(path.dirname(filePath), { recursive: true })];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, fs.promises.writeFile(filePath, plist_1["default"].build(shareMenu))];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, config];
+                }
+            });
+        }); },
+    ]);
+};
 exports["default"] = withReactNativeShareMenu;
 /*
 Function

@@ -6,11 +6,10 @@ import {
   removeContents,
 } from "@expo/config-plugins/build/utils/generateCode";
 import {
-  withEntitlementsPlist,
   InfoPlist,
+  withEntitlementsPlist,
   withDangerousMod,
   withInfoPlist,
-  withPodfileProperties,
 } from "@expo/config-plugins";
 
 import * as fs from "fs";
@@ -66,10 +65,16 @@ const withReactNativeShareMenu: ConfigPlugin = (config, props) => {
 };
 
 const withShareMenuIos: ConfigPlugin = (config, props) => {
+  // main iOS target
   config = withShareMenuEntitlements(config);
   config = withShareMenuInfoPlist(config);
   // config = withShareMenuPodfile(config);
   config = withShareMenuAppDelegate(config);
+
+  // share extension target
+  // config = withShareMenuExtTarget(config);
+  // config = withShareMenuExtEntitlements(config);
+  // config = withShareMenuExtInfoPlist(config);
 
   return config;
 };
@@ -240,41 +245,45 @@ const withShareMenuPodfile: ConfigPlugin = (config) => {
   ]);
 };
 
-// const withShareMenuExtInfoPlist: ConfigPlugin = (config) => {
-//   return withDangerousMod(config, [
-//     "ios",
-//     async (config) => {
-//       const shareMenuExtName = getProjectShareMenuName(
-//         config.modRequest.projectName!
-//       );
-//       const shareMenuRootPath = path.join(
-//         config.modRequest.platformProjectRoot,
-//         shareMenuExtName
-//       );
-//       const filePath = path.join(shareMenuRootPath, "Info.plist");
+const withShareMenuExtEntitlements: ConfigPlugin = (config) => {
+  return config;
+};
 
-//       const shareMenu: InfoPlist = {
-//         HostAppBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)",
-//         HostAppURLScheme: "$(PRODUCT_BUNDLE_IDENTIFIER)://",
-//         NSExtension: {
-//           NSExtensionAttributes: [
-//             {
-//               NSExtensionActivationRule: [
-//                 { NSExtensionActivationSupportsText: true },
-//                 { NSExtensionActivationSupportsWebURLWithMaxCount: 1 },
-//               ],
-//             },
-//           ],
-//         },
-//       };
+const withShareMenuExtInfoPlist: ConfigPlugin = (config) => {
+  return withDangerousMod(config, [
+    "ios",
+    async (config) => {
+      const shareMenuExtName = getProjectShareMenuName(
+        config.modRequest.projectName!
+      );
+      const shareMenuRootPath = path.join(
+        config.modRequest.platformProjectRoot,
+        shareMenuExtName
+      );
+      const filePath = path.join(shareMenuRootPath, "Info.plist");
 
-//       await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-//       await fs.promises.writeFile(filePath, plist.build(shareMenu));
+      const shareMenu: InfoPlist = {
+        HostAppBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)",
+        HostAppURLScheme: "$(PRODUCT_BUNDLE_IDENTIFIER)://",
+        NSExtension: {
+          NSExtensionAttributes: [
+            {
+              NSExtensionActivationRule: [
+                { NSExtensionActivationSupportsText: true },
+                { NSExtensionActivationSupportsWebURLWithMaxCount: 1 },
+              ],
+            },
+          ],
+        },
+      };
 
-//       return config;
-//     },
-//   ]);
-// };
+      await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.promises.writeFile(filePath, plist.build(shareMenu));
+
+      return config;
+    },
+  ]);
+};
 
 export default withReactNativeShareMenu;
 
