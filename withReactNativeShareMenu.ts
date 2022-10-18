@@ -19,9 +19,11 @@ import * as path from "path";
 
 // constants
 const SHARE_MENU_TAG = "react-native-share-menu";
+// TODO make anchor take in the project name
 const IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
 const IOS_INSTALLER_ANCHOR =
   /__apply_Xcode_12_5_M1_post_install_workaround\(installer\)/gm;
+// TODO make anchor take in the project name
 const IOS_MAIN_TARGET_ANCHOR = /target 'ExpoPlist' do/gm;
 
 // helpers
@@ -81,7 +83,7 @@ const withReactNativeShareMenu: ConfigPlugin = (config) => {
 const withShareMenuEntitlements: ConfigPlugin = (config) => {
   return withEntitlementsPlist(config, (config) => {
     config.modResults["com.apple.security.application-groups"] = [
-      "group.com.frankcalise.MYGROUPNAME",
+      `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
     ];
     return config;
   });

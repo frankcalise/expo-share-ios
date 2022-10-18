@@ -43,8 +43,10 @@ var fs = require("fs");
 var path = require("path");
 // constants
 var SHARE_MENU_TAG = "react-native-share-menu";
+// TODO make anchor take in the project name
 var IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
 var IOS_INSTALLER_ANCHOR = /__apply_Xcode_12_5_M1_post_install_workaround\(installer\)/gm;
+// TODO make anchor take in the project name
 var IOS_MAIN_TARGET_ANCHOR = /target 'ExpoPlist' do/gm;
 // helpers
 function getProjectShareMenuName(name) {
@@ -88,8 +90,9 @@ var withReactNativeShareMenu = function (config) {
 // ios
 var withShareMenuEntitlements = function (config) {
     return (0, config_plugins_1.withEntitlementsPlist)(config, function (config) {
+        var _a;
         config.modResults["com.apple.security.application-groups"] = [
-            "group.com.frankcalise.MYGROUPNAME",
+            "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
         ];
         return config;
     });
