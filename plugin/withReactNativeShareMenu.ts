@@ -130,21 +130,23 @@ const withShareMenuExtensionTarget: ConfigPlugin<ShareMenuPluginProps> = (
     // for (let x = 0; x < 5 && !FileManager.dirExists(dir); x++) {
     //   dir = "../" + dir;
     // }
-    addShareMenuExtension(
+    addShareMenuExtensionTarget(
+      config.modResults,
       config.modRequest.projectName || "",
       options,
-      "./extensionFiles"
+      `${config.modRequest.projectRoot}/plugin/extensionFiles/`
     );
 
     return config;
   });
 };
 
-const addShareMenuExtension = (
+async function addShareMenuExtensionTarget(
+  proj: XcodeProject,
   appName: string,
   options: PluginOptions,
   sourceDir: string
-) => {
+) {
   const {
     iosPath,
     devTeam,
@@ -156,24 +158,21 @@ const addShareMenuExtension = (
   const projPath = `${iosPath}/${appName}.xcodeproj/project.pbxproj`;
   console.log(`\treact-native-share-menu-expo-plugin: ${projPath}`);
 
-  const extFiles = ["ShareMenu.entitlements", `Info.plist`];
-
-  const xcodeProject = xcode.project(projPath);
-
-  // xcodeProject.parse(async function (err: Error) {
-  //   if (err) {
-  //     console.log(`\tError parsing iOS project: ${JSON.stringify(err)}`);
-  //     return;
-  //   }
+  const extFiles = [
+    "ShareMenu.entitlements",
+    "Info.plist",
+    "Base.lproj/MainInterface.storyboard",
+  ];
 
   //   /* COPY OVER EXTENSION FILES */
-  //   fs.mkdirSync(`${iosPath}/${NSE_TARGET_NAME}`, { recursive: true });
+  fs.mkdirSync(`${iosPath}/${NSE_TARGET_NAME}`, { recursive: true });
+  fs.mkdirSync(`${iosPath}/${NSE_TARGET_NAME}/Base.lproj`, { recursive: true });
 
-  //   for (let i = 0; i < extFiles.length; i++) {
-  //     const extFile = extFiles[i];
-  //     const targetFile = `${iosPath}/${NSE_TARGET_NAME}/${extFile}`;
-  //     await FileManager.copyFile(`${sourceDir}${extFile}`, targetFile);
-  //   }
+  for (let i = 0; i < extFiles.length; i++) {
+    const extFile = extFiles[i];
+    const targetFile = `${iosPath}/${NSE_TARGET_NAME}/${extFile}`;
+    copyFileSync(`${sourceDir}${extFile}`, targetFile);
+  }
 
   //   // will happen in withShareMenuIos following withShareMenuExtensionTarget
   //   // /* MODIFY COPIED EXTENSION FILES */
@@ -188,12 +187,16 @@ const addShareMenuExtension = (
   //   //   bundleShortVersion ?? DEFAULT_BUNDLE_SHORT_VERSION
   //   // );
 
+  const targetUuid = proj.generateUuid();
+  console.log(`\treact-native-share-menu-expo-plugin: ${targetUuid}`);
   //   // Create new PBXGroup for the extension
   //   const extGroup = xcodeProject.addPbxGroup(
   //     extFiles,
   //     NSE_TARGET_NAME,
   //     NSE_TARGET_NAME
   //   );
+
+  proj.addPbxGroup()
 
   //   // Add the new PBXGroup to the top level group. This makes the
   //   // files / folder appear in the file explorer in Xcode.
@@ -274,7 +277,7 @@ const addShareMenuExtension = (
 
   //   fs.writeFileSync(projPath, xcodeProject.writeSync());
   // });
-};
+}
 
 // this gives TS error? change to function signature
 // const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
@@ -524,5 +527,36 @@ class FileManager {
 
   static dirExists(path: string): boolean {
     return fs.existsSync(path);
+  }
+}
+
+function copyFileSync(source: any, target: any) {
+  let targetFile = target;
+
+  if (fs.existsSync(target)) {
+    if (fs.lstatSync(target).isDirectory()) {
+      targetFile = path.join(target, path.basename(source));
+    }
+  }
+
+  fs.writeFileSync(targetFile, fs.readFileSync(source));
+}
+
+function copyFolderRecursiveSync(source: any, target: any) {
+  const targetPath = path.join(target, path.basename(source));
+  if (!fs.existsSync(targetPath)) {
+    fs.mkdirSync(targetPath);
+  }
+
+  if (fs.lstatSync(source).isDirectory()) {
+    const files = fs.readdirSync(source);
+    files.forEach((file) => {
+      const currentPath = path.join(source, file);
+      if (fs.lstatSync(currentPath).isDirectory()) {
+        copyFolderRecursiveSync(currentPath, targetPath);
+      } else {
+        copyFileSync(currentPath, targetPath);
+      }
+    });
   }
 }
