@@ -44,10 +44,8 @@ var config_plugins_2 = require("@expo/config-plugins");
 var fs = require("fs");
 var path = require("path");
 var withShareMenuAndroid_1 = require("./withShareMenuAndroid");
+var addShareMenuExtensionTarget_1 = require("./xcodeShareMenu/addShareMenuExtensionTarget");
 // constants
-var IPHONEOS_DEPLOYMENT_TARGET = "12.4";
-var TARGETED_DEVICE_FAMILY = "1,2";
-var NSE_TARGET_NAME = "ShareMenu";
 var SHARE_MENU_TAG = "react-native-share-menu";
 // TODO make anchor take in the project name
 var IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
@@ -108,7 +106,8 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                 devTeam: shareMenuProps === null || shareMenuProps === void 0 ? void 0 : shareMenuProps.devTeam,
                 bundleVersion: (_b = config.ios) === null || _b === void 0 ? void 0 : _b.buildNumber,
                 bundleShortVersion: config === null || config === void 0 ? void 0 : config.version,
-                iPhoneDeploymentTarget: shareMenuProps === null || shareMenuProps === void 0 ? void 0 : shareMenuProps.iPhoneDeploymentTarget
+                iPhoneDeploymentTarget: shareMenuProps === null || shareMenuProps === void 0 ? void 0 : shareMenuProps.iPhoneDeploymentTarget,
+                platformProjectRoot: config.modRequest.platformProjectRoot
             };
             // support for monorepos where node_modules can be up to 5 parents
             // above the project directory.
@@ -116,44 +115,11 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
             // for (let x = 0; x < 5 && !FileManager.dirExists(dir); x++) {
             //   dir = "../" + dir;
             // }
-            addShareMenuExtensionTarget(config.modResults, config.modRequest.projectName || "", options, "".concat(config.modRequest.projectRoot, "/plugin/extensionFiles/"));
+            (0, addShareMenuExtensionTarget_1.addShareMenuExtensionTarget)(config.modResults, config.modRequest.projectName || "", options, "".concat(config.modRequest.projectRoot, "/plugin/extensionFiles/"));
             return [2 /*return*/, config];
         });
     }); });
 };
-function addShareMenuExtensionTarget(proj, appName, options, sourceDir) {
-    return __awaiter(this, void 0, void 0, function () {
-        var iosPath, devTeam, bundleIdentifier, bundleVersion, bundleShortVersion, iPhoneDeploymentTarget, projPath, extFiles, i, extFile, targetFile, targetUuid;
-        return __generator(this, function (_a) {
-            iosPath = options.iosPath, devTeam = options.devTeam, bundleIdentifier = options.bundleIdentifier, bundleVersion = options.bundleVersion, bundleShortVersion = options.bundleShortVersion, iPhoneDeploymentTarget = options.iPhoneDeploymentTarget;
-            projPath = "".concat(iosPath, "/").concat(appName, ".xcodeproj/project.pbxproj");
-            console.log("\treact-native-share-menu-expo-plugin: ".concat(projPath));
-            extFiles = [
-                "ShareMenu.entitlements",
-                "Info.plist",
-                "Base.lproj/MainInterface.storyboard",
-            ];
-            //   /* COPY OVER EXTENSION FILES */
-            fs.mkdirSync("".concat(iosPath, "/").concat(NSE_TARGET_NAME), { recursive: true });
-            fs.mkdirSync("".concat(iosPath, "/").concat(NSE_TARGET_NAME, "/Base.lproj"), { recursive: true });
-            for (i = 0; i < extFiles.length; i++) {
-                extFile = extFiles[i];
-                targetFile = "".concat(iosPath, "/").concat(NSE_TARGET_NAME, "/").concat(extFile);
-                copyFileSync("".concat(sourceDir).concat(extFile), targetFile);
-            }
-            targetUuid = proj.generateUuid();
-            console.log("\treact-native-share-menu-expo-plugin: ".concat(targetUuid));
-            //   // Create new PBXGroup for the extension
-            //   const extGroup = xcodeProject.addPbxGroup(
-            //     extFiles,
-            //     NSE_TARGET_NAME,
-            //     NSE_TARGET_NAME
-            //   );
-            proj.addPbxGroup();
-            return [2 /*return*/];
-        });
-    });
-}
 // this gives TS error? change to function signature
 // const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
 function addShareMenuAppDelegateImport(src) {
@@ -329,84 +295,3 @@ var withShareMenuExtensionInfoPlist = function (config) {
     ]);
 };
 exports["default"] = withReactNativeShareMenu;
-var FileManager = /** @class */ (function () {
-    function FileManager() {
-    }
-    FileManager.readFile = function (path) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        fs.readFile(path, "utf8", function (err, data) {
-                            if (err || !data) {
-                                reject(err);
-                                return;
-                            }
-                            resolve(data);
-                        });
-                    })];
-            });
-        });
-    };
-    FileManager.writeFile = function (path, contents) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        fs.writeFile(path, contents, "utf8", function (err) {
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-                            resolve();
-                        });
-                    })];
-            });
-        });
-    };
-    FileManager.copyFile = function (path1, path2) {
-        return __awaiter(this, void 0, void 0, function () {
-            var fileContents;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, FileManager.readFile(path1)];
-                    case 1:
-                        fileContents = _a.sent();
-                        return [4 /*yield*/, FileManager.writeFile(path2, fileContents)];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    FileManager.dirExists = function (path) {
-        return fs.existsSync(path);
-    };
-    return FileManager;
-}());
-function copyFileSync(source, target) {
-    var targetFile = target;
-    if (fs.existsSync(target)) {
-        if (fs.lstatSync(target).isDirectory()) {
-            targetFile = path.join(target, path.basename(source));
-        }
-    }
-    fs.writeFileSync(targetFile, fs.readFileSync(source));
-}
-function copyFolderRecursiveSync(source, target) {
-    var targetPath = path.join(target, path.basename(source));
-    if (!fs.existsSync(targetPath)) {
-        fs.mkdirSync(targetPath);
-    }
-    if (fs.lstatSync(source).isDirectory()) {
-        var files = fs.readdirSync(source);
-        files.forEach(function (file) {
-            var currentPath = path.join(source, file);
-            if (fs.lstatSync(currentPath).isDirectory()) {
-                copyFolderRecursiveSync(currentPath, targetPath);
-            }
-            else {
-                copyFileSync(currentPath, targetPath);
-            }
-        });
-    }
-}
