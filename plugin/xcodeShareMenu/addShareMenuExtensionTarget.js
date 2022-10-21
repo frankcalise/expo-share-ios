@@ -38,20 +38,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 exports.addShareMenuExtensionTarget = void 0;
 var fs = require("fs");
-var addBuildPhases_1 = require("./addBuildPhases");
-var addPbxGroup_1 = require("./addPbxGroup");
-var addProductFile_1 = require("./addProductFile");
-var addTargetDependency_1 = require("./addTargetDependency");
-var addtoPbxNativeTargetSection_1 = require("./addtoPbxNativeTargetSection");
-var addToPbxProjectSection_1 = require("./addToPbxProjectSection");
-var addXCConfigurationList_1 = require("./addXCConfigurationList");
 var util_1 = require("./util");
 var IPHONEOS_DEPLOYMENT_TARGET = "12.4";
 var TARGETED_DEVICE_FAMILY = "1,2";
 var shareMenuFolder = "ShareMenu";
 function addShareMenuExtensionTarget(proj, appName, options, sourceDir) {
     return __awaiter(this, void 0, void 0, function () {
-        var iosPath, devTeam, bundleIdentifier, bundleVersion, bundleShortVersion, iPhoneDeploymentTarget, platformProjectRoot, projPath, extFiles, i, extFile, targetFile, targetUuid, groupName, xCConfigurationList, productFile, target;
+        var iosPath, devTeam, bundleIdentifier, bundleVersion, bundleShortVersion, iPhoneDeploymentTarget, platformProjectRoot, projPath, extFiles, i, extFile, targetFile, targetUuid, groupName;
         return __generator(this, function (_a) {
             iosPath = options.iosPath, devTeam = options.devTeam, bundleIdentifier = options.bundleIdentifier, bundleVersion = options.bundleVersion, bundleShortVersion = options.bundleShortVersion, iPhoneDeploymentTarget = options.iPhoneDeploymentTarget, platformProjectRoot = options.platformProjectRoot;
             projPath = "".concat(iosPath, "/").concat(appName, ".xcodeproj/project.pbxproj");
@@ -59,11 +52,10 @@ function addShareMenuExtensionTarget(proj, appName, options, sourceDir) {
             extFiles = [
                 "ShareMenu.entitlements",
                 "Info.plist",
-                "Base.lproj/MainInterface.storyboard",
+                "MainInterface.storyboard",
             ];
             //   /* COPY OVER EXTENSION FILES */
             fs.mkdirSync("".concat(iosPath, "/").concat(shareMenuFolder), { recursive: true });
-            fs.mkdirSync("".concat(iosPath, "/").concat(shareMenuFolder, "/Base.lproj"), { recursive: true });
             for (i = 0; i < extFiles.length; i++) {
                 extFile = extFiles[i];
                 targetFile = "".concat(iosPath, "/").concat(shareMenuFolder, "/").concat(extFile);
@@ -72,27 +64,30 @@ function addShareMenuExtensionTarget(proj, appName, options, sourceDir) {
             targetUuid = proj.generateUuid();
             groupName = "group.".concat(bundleIdentifier);
             console.log("\treact-native-share-menu-expo-plugin: ".concat(targetUuid));
-            xCConfigurationList = (0, addXCConfigurationList_1["default"])(proj, {
-                shareMenuFolder: shareMenuFolder,
-                shareMenuBundleIdentifier: bundleIdentifier,
-                shareMenuName: shareMenuFolder,
-                devTeam: devTeam
-            });
-            productFile = (0, addProductFile_1["default"])(proj, shareMenuFolder, groupName);
-            target = (0, addtoPbxNativeTargetSection_1["default"])(proj, {
-                shareMenuFolder: shareMenuFolder,
-                targetUuid: targetUuid,
-                productFile: productFile,
-                xCConfigurationList: xCConfigurationList
-            });
-            // Add target to PBX project section
-            (0, addToPbxProjectSection_1["default"])(proj, target);
-            // Add target dependency
-            (0, addTargetDependency_1["default"])(proj, target);
-            // Add build phases
-            (0, addBuildPhases_1["default"])(proj, { groupName: groupName, productFile: productFile, targetUuid: targetUuid });
-            // Add PBXGroup
-            (0, addPbxGroup_1["default"])(proj, { appName: appName, shareMenuFolder: shareMenuFolder, platformProjectRoot: platformProjectRoot });
+            // // Add XCConfigurationList
+            // const xCConfigurationList = addXCConfigurationList(proj, {
+            //   shareMenuFolder,
+            //   shareMenuBundleIdentifier: bundleIdentifier,
+            //   shareMenuName: shareMenuFolder,
+            //   devTeam,
+            // });
+            // // Add product file
+            // const productFile = addProductFile(proj, shareMenuFolder, groupName);
+            // // Add target
+            // const target = addToPbxNativeTargetSection(proj, {
+            //   shareMenuFolder,
+            //   targetUuid,
+            //   productFile,
+            //   xCConfigurationList,
+            // });
+            // // Add target to PBX project section
+            // addToPbxProjectSection(proj, target);
+            // // Add target dependency
+            // addTargetDependency(proj, target);
+            // // Add build phases
+            // addBuildPhases(proj, { groupName, productFile, targetUuid });
+            // // Add PBXGroup
+            // addPbxGroup(proj, { appName, shareMenuFolder, platformProjectRoot });
             return [2 /*return*/, true];
         });
     });

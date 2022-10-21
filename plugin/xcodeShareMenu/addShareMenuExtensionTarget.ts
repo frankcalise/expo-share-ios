@@ -45,12 +45,11 @@ export async function addShareMenuExtensionTarget(
   const extFiles = [
     "ShareMenu.entitlements",
     "Info.plist",
-    "Base.lproj/MainInterface.storyboard",
+    "MainInterface.storyboard",
   ];
 
   //   /* COPY OVER EXTENSION FILES */
   fs.mkdirSync(`${iosPath}/${shareMenuFolder}`, { recursive: true });
-  fs.mkdirSync(`${iosPath}/${shareMenuFolder}/Base.lproj`, { recursive: true });
 
   for (let i = 0; i < extFiles.length; i++) {
     const extFile = extFiles[i];
@@ -75,36 +74,36 @@ export async function addShareMenuExtensionTarget(
   const groupName = `group.${bundleIdentifier}`;
   console.log(`\treact-native-share-menu-expo-plugin: ${targetUuid}`);
 
-  // Add XCConfigurationList
-  const xCConfigurationList = addXCConfigurationList(proj, {
-    shareMenuFolder,
-    shareMenuBundleIdentifier: bundleIdentifier,
-    shareMenuName: shareMenuFolder,
-    devTeam,
-  });
+  // // Add XCConfigurationList
+  // const xCConfigurationList = addXCConfigurationList(proj, {
+  //   shareMenuFolder,
+  //   shareMenuBundleIdentifier: bundleIdentifier,
+  //   shareMenuName: shareMenuFolder,
+  //   devTeam,
+  // });
 
-  // Add product file
-  const productFile = addProductFile(proj, shareMenuFolder, groupName);
+  // // Add product file
+  // const productFile = addProductFile(proj, shareMenuFolder, groupName);
 
-  // Add target
-  const target = addToPbxNativeTargetSection(proj, {
-    shareMenuFolder,
-    targetUuid,
-    productFile,
-    xCConfigurationList,
-  });
+  // // Add target
+  // const target = addToPbxNativeTargetSection(proj, {
+  //   shareMenuFolder,
+  //   targetUuid,
+  //   productFile,
+  //   xCConfigurationList,
+  // });
 
-  // Add target to PBX project section
-  addToPbxProjectSection(proj, target);
+  // // Add target to PBX project section
+  // addToPbxProjectSection(proj, target);
 
-  // Add target dependency
-  addTargetDependency(proj, target);
+  // // Add target dependency
+  // addTargetDependency(proj, target);
 
-  // Add build phases
-  addBuildPhases(proj, { groupName, productFile, targetUuid });
+  // // Add build phases
+  // addBuildPhases(proj, { groupName, productFile, targetUuid });
 
-  // Add PBXGroup
-  addPbxGroup(proj, { appName, shareMenuFolder, platformProjectRoot });
+  // // Add PBXGroup
+  // addPbxGroup(proj, { appName, shareMenuFolder, platformProjectRoot });
 
   return true;
 
