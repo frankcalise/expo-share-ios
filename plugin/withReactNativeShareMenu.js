@@ -285,9 +285,10 @@ var withShareMenuEntitlements = function (config) {
 };
 var withShareMenuInfoPlist = function (config) {
     return (0, config_plugins_2.withInfoPlist)(config, function (config) {
+        var _a;
         var plistItems = {
             CFBundleTypeRole: "editor",
-            CFBundleURLSchemes: ["$PRODUCT_BUNDLE_IDENTIFIER"]
+            CFBundleURLSchemes: ["".concat((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier)]
         };
         config.modResults.CFBundleURLTypes.push(plistItems);
         return config;
@@ -395,13 +396,16 @@ var withShareMenuExtensionInfoPlist = function (config) {
                         shareMenu = {
                             HostAppBundleIdentifier: "".concat(appIdentifier),
                             HostAppURLScheme: "".concat(appIdentifier, "://"),
+                            CFBundleDisplayName: "".concat(config.modRequest.projectName || "", " ").concat(SHARE_EXT_NAME),
                             NSExtension: {
                                 NSExtensionAttributes: {
                                     NSExtensionActivationRule: {
                                         NSExtensionActivationSupportsText: true,
                                         NSExtensionActivationSupportsWebURLWithMaxCount: 1
                                     }
-                                }
+                                },
+                                NSExtensionMainStoryboard: "MainInterface",
+                                NSExtensionPointIdentifier: "com.apple.share-services"
                             }
                         };
                         return [4 /*yield*/, fs.mkdirSync(path.dirname(filePath), { recursive: true })];

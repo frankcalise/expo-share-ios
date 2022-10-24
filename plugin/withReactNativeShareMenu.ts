@@ -407,7 +407,7 @@ const withShareMenuInfoPlist: ConfigPlugin = (config) => {
   return withInfoPlist(config, (config) => {
     const plistItems = {
       CFBundleTypeRole: "editor",
-      CFBundleURLSchemes: [`$PRODUCT_BUNDLE_IDENTIFIER`],
+      CFBundleURLSchemes: [`${config?.ios?.bundleIdentifier}`],
     };
     config.modResults.CFBundleURLTypes.push(plistItems);
 
@@ -537,6 +537,9 @@ const withShareMenuExtensionInfoPlist: ConfigPlugin = (config) => {
       const shareMenu: InfoPlist = {
         HostAppBundleIdentifier: `${appIdentifier}`,
         HostAppURLScheme: `${appIdentifier}://`,
+        CFBundleDisplayName: `${
+          config.modRequest.projectName || ""
+        } ${SHARE_EXT_NAME}`,
         NSExtension: {
           NSExtensionAttributes: {
             NSExtensionActivationRule: {
@@ -544,6 +547,8 @@ const withShareMenuExtensionInfoPlist: ConfigPlugin = (config) => {
               NSExtensionActivationSupportsWebURLWithMaxCount: 1,
             },
           },
+          NSExtensionMainStoryboard: "MainInterface",
+          NSExtensionPointIdentifier: "com.apple.share-services",
         },
       };
 
