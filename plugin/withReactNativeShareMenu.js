@@ -44,7 +44,7 @@ var config_plugins_2 = require("@expo/config-plugins");
 var fs = require("fs");
 var path = require("path");
 var withShareMenuAndroid_1 = require("./withShareMenuAndroid");
-var util_1 = require("./xcodeShareMenu/util");
+var util_1 = require("./util");
 // constants
 var SHARE_EXT_NAME = "ShareMenu";
 var SHARE_MENU_TAG = "react-native-share-menu";
@@ -91,14 +91,14 @@ var withShareMenuIos = function (config, props) {
     config = withShareMenuPodfile(config);
     config = withShareMenuAppDelegate(config);
     // share extension target
-    // config = withShareMenuExtensionEntitlements(config);
     config = withShareMenuExtensionTarget(config, props);
-    // config = withShareMenuExtensionInfoPlist(config);
+    config = withShareMenuExtensionEntitlements(config);
+    config = withShareMenuExtensionInfoPlist(config);
     return config;
 };
 var withShareMenuExtensionTarget = function (config, shareMenuProps) {
     return (0, config_plugins_1.withXcodeProject)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
-        var extensionName, appIdentifier, shareExtensionIdentifier, shareMenuFolder, iosPath, projPath, sourceDir, extFiles, i, extFile, targetFile, proj, shareMenuKey, groups, projObjects, target, buildPath, PLIST_NAME, BRIDGING_HEADER_NAME, ENTITLEMENTS_NAME, infoPlistPath, bridgingHeaderPath, entitlementsPath, storyboardPath, resourceFile, currentProjectVersion, marketingVersion, configurations, key, buildSettingsObj;
+        var extensionName, appIdentifier, shareExtensionIdentifier, shareMenuFolder, iosPath, projPath, sourceDir, extFiles, i, extFile, targetFile, proj, shareMenuKey, groups, projObjects, target, buildPath, STORYBOARD_NAME, storyboardPath, PLIST_NAME, BRIDGING_HEADER_NAME, ENTITLEMENTS_NAME, infoPlistPath, bridgingHeaderPath, entitlementsPath, variantKey, currentProjectVersion, marketingVersion, configurations, key, buildSettingsObj;
         var _a;
         return __generator(this, function (_b) {
             extensionName = "ShareMenu";
@@ -108,14 +108,13 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
             iosPath = config.modRequest.platformProjectRoot;
             projPath = "".concat(iosPath, "/").concat(extensionName, ".xcodeproj/project.pbxproj");
             sourceDir = "".concat(config.modRequest.projectRoot, "/plugin/extensionFiles/");
-            console.log("\treact-native-share-menu-expo-plugin: ".concat(projPath));
             extFiles = [
-                "ShareMenu.entitlements",
-                "ShareMenu-Info.plist",
+                // "ShareMenu.entitlements",
+                // "ShareMenu-Info.plist",
                 "MainInterface.storyboard",
                 "ShareMenu-Bridging-Header.h",
             ];
-            //   /* COPY OVER EXTENSION FILES */
+            /* COPY OVER EXTENSION FILES */
             fs.mkdirSync("".concat(iosPath, "/").concat(shareMenuFolder), { recursive: true });
             for (i = 0; i < extFiles.length; i++) {
                 extFile = extFiles[i];
@@ -123,7 +122,7 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                 (0, util_1.copyFileSync)(path.join(sourceDir, extFile), targetFile);
             }
             proj = config.modResults;
-            shareMenuKey = proj.addPbxGroup([], SHARE_EXT_NAME, SHARE_EXT_NAME).uuid;
+            shareMenuKey = proj.pbxCreateGroup(SHARE_EXT_NAME, SHARE_EXT_NAME);
             groups = proj.hash.project.objects["PBXGroup"];
             Object.keys(groups).forEach(function (key) {
                 if (groups[key].name === undefined) {
@@ -155,10 +154,11 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
             }, buildPath);
             // Build ShareViewController.swift in our extension target
             proj.addBuildPhase([], "PBXSourcesBuildPhase", "Sources", target.uuid);
-            // Build phase for the MainInterface.storyboard in extension
-            proj.addBuildPhase(["MainInterface.storyboard"], 
-            // [],
-            "PBXResourcesBuildPhase", "Resources", target.uuid);
+            STORYBOARD_NAME = "MainInterface.storyboard";
+            storyboardPath = path.join(STORYBOARD_NAME);
+            proj.addBuildPhase(
+            // [storyboardPath],
+            [], "PBXResourcesBuildPhase", "Resources", target.uuid);
             // Build phase for Framework
             proj.addBuildPhase([], "PBXFrameworksBuildPhase", "Frameworks", target.uuid);
             proj.addFramework("libPods-ShareMenu.a", { target: target.uuid });
@@ -180,22 +180,17 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
             infoPlistPath = path.join(shareMenuFolder, PLIST_NAME);
             bridgingHeaderPath = path.join(shareMenuFolder, BRIDGING_HEADER_NAME);
             entitlementsPath = path.join(shareMenuFolder, ENTITLEMENTS_NAME);
-            storyboardPath = path.join("MainInterface.storyboard");
-            // console.log(`\t!!!!react-native-share-menu-expo-plugin: ${infoPlistPath}`);
-            // console.log(
-            //   `\t!!!!react-native-share-menu-expo-plugin: ${bridgingHeaderPath}`
-            // );
-            // console.log(
-            //   `\t!!!!react-native-share-menu-expo-plugin: ${entitlementsPath}`
-            // );
-            // proj.addResourceFile(infoPlistPath, shareMenuKey);
-            // proj.addHeaderFile(bridgingHeaderPath, [], shareMenuKey);
             proj.addFile(ENTITLEMENTS_NAME, shareMenuKey);
             proj.addFile(PLIST_NAME, shareMenuKey);
             proj.addFile(BRIDGING_HEADER_NAME, shareMenuKey);
             // Add source files to our PbxGroup and our newly created PBXSourcesBuildPhase
-            proj.addSourceFile("../../node_modules/ios/ShareViewController.swift", { target: target.uuid }, shareMenuKey);
-            resourceFile = proj.addResourceFile(storyboardPath, { target: target.uuid, variantGroup: true }, shareMenuKey);
+            proj.addSourceFile("../../node_modules/react-native-share-menu/ios/ShareViewController.swift", { target: target.uuid }, shareMenuKey);
+            variantKey = proj.pbxCreateVariantGroup(STORYBOARD_NAME);
+            //  Add the resource file and include it into the target PbxResourcesBuildPhase and PbxGroup
+            proj.addResourceFile(storyboardPath, {
+                target: target.uuid,
+                lastKnownFileType: "file.storyboard"
+            }, shareMenuKey);
             currentProjectVersion = config.ios.buildNumber || "1";
             marketingVersion = config.version;
             configurations = proj.pbxXCBuildConfigurationSection();
@@ -292,7 +287,7 @@ var withShareMenuInfoPlist = function (config) {
     return (0, config_plugins_2.withInfoPlist)(config, function (config) {
         var plistItems = {
             CFBundleTypeRole: "editor",
-            CFBundleURLSchemes: ["$(PRODUCT_BUNDLE_IDENTIFIER)"]
+            CFBundleURLSchemes: ["$PRODUCT_BUNDLE_IDENTIFIER"]
         };
         config.modResults.CFBundleURLTypes.push(plistItems);
         return config;
@@ -352,45 +347,69 @@ var withShareMenuPodfile = function (config) {
     ]);
 };
 var withShareMenuExtensionEntitlements = function (config) {
-    return (0, config_plugins_2.withEntitlementsPlist)(config, function (config) {
-        var _a;
-        config.modResults["com.apple.security.application-groups"] = [
-            "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
-        ];
-        return config;
-    });
+    return (0, config_plugins_2.withDangerousMod)(config, [
+        "ios",
+        function (config) { return __awaiter(void 0, void 0, void 0, function () {
+            var shareMenuRootPath, filePath, shareMenu;
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, SHARE_EXT_NAME);
+                        filePath = path.join(shareMenuRootPath, "ShareMenu.entitlements");
+                        shareMenu = {
+                            "com.apple.security.application-groups": [
+                                "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
+                            ]
+                        };
+                        return [4 /*yield*/, fs.mkdirSync(path.dirname(filePath), { recursive: true })];
+                    case 1:
+                        _b.sent();
+                        return [4 /*yield*/, fs.writeFileSync(filePath, plist_1["default"].build(shareMenu))];
+                    case 2:
+                        _b.sent();
+                        return [2 /*return*/, config];
+                }
+            });
+        }); },
+    ]);
+    // return withEntitlementsPlist(config, (config) => {
+    //   config.modResults["com.apple.security.application-groups"] = [
+    //     `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
+    //   ];
+    //   return config;
+    // });
 };
 var withShareMenuExtensionInfoPlist = function (config) {
     return (0, config_plugins_2.withDangerousMod)(config, [
         "ios",
         function (config) { return __awaiter(void 0, void 0, void 0, function () {
-            var shareMenuExtName, shareMenuRootPath, filePath, shareMenu;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var shareMenuRootPath, filePath, appIdentifier, shareMenu;
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        shareMenuExtName = getProjectShareMenuName(config.modRequest.projectName);
-                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, shareMenuExtName);
+                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, SHARE_EXT_NAME);
                         filePath = path.join(shareMenuRootPath, "ShareMenu-Info.plist");
+                        appIdentifier = (_a = config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier;
                         shareMenu = {
-                            HostAppBundleIdentifier: "$(PRODUCT_BUNDLE_IDENTIFIER)",
-                            HostAppURLScheme: "$(PRODUCT_BUNDLE_IDENTIFIER)://",
+                            HostAppBundleIdentifier: "".concat(appIdentifier),
+                            HostAppURLScheme: "".concat(appIdentifier, "://"),
                             NSExtension: {
-                                NSExtensionAttributes: [
-                                    {
-                                        NSExtensionActivationRule: [
-                                            { NSExtensionActivationSupportsText: true },
-                                            { NSExtensionActivationSupportsWebURLWithMaxCount: 1 },
-                                        ]
-                                    },
-                                ]
+                                NSExtensionAttributes: {
+                                    NSExtensionActivationRule: {
+                                        NSExtensionActivationSupportsText: true,
+                                        NSExtensionActivationSupportsWebURLWithMaxCount: 1
+                                    }
+                                }
                             }
                         };
-                        return [4 /*yield*/, fs.promises.mkdir(path.dirname(filePath), { recursive: true })];
+                        return [4 /*yield*/, fs.mkdirSync(path.dirname(filePath), { recursive: true })];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, fs.promises.writeFile(filePath, plist_1["default"].build(shareMenu))];
+                        _b.sent();
+                        return [4 /*yield*/, fs.writeFileSync(filePath, plist_1["default"].build(shareMenu))];
                     case 2:
-                        _a.sent();
+                        _b.sent();
                         return [2 /*return*/, config];
                 }
             });
