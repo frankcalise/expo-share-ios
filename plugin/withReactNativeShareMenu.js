@@ -46,6 +46,7 @@ var path = require("path");
 var withShareMenuAndroid_1 = require("./withShareMenuAndroid");
 var util_1 = require("./xcodeShareMenu/util");
 // constants
+var SHARE_EXT_NAME = "ShareMenu";
 var SHARE_MENU_TAG = "react-native-share-menu";
 // TODO make anchor take in the project name
 var IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
@@ -87,7 +88,7 @@ var withShareMenuIos = function (config, props) {
     // main iOS target
     config = withShareMenuEntitlements(config);
     config = withShareMenuInfoPlist(config);
-    // config = withShareMenuPodfile(config);
+    config = withShareMenuPodfile(config);
     config = withShareMenuAppDelegate(config);
     // share extension target
     // config = withShareMenuExtensionEntitlements(config);
@@ -97,7 +98,7 @@ var withShareMenuIos = function (config, props) {
 };
 var withShareMenuExtensionTarget = function (config, shareMenuProps) {
     return (0, config_plugins_1.withXcodeProject)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
-        var extensionName, appIdentifier, shareExtensionIdentifier, shareMenuFolder, iosPath, projPath, sourceDir, extFiles, i, extFile, targetFile, proj, shareMenuKey, groups, target, buildPath, infoPlistPath, bridgingHeaderPath, entitlementsPath, storyboardPath, currentProjectVersion, marketingVersion, configurations, key, buildSettingsObj;
+        var extensionName, appIdentifier, shareExtensionIdentifier, shareMenuFolder, iosPath, projPath, sourceDir, extFiles, i, extFile, targetFile, proj, shareMenuKey, groups, projObjects, target, buildPath, PLIST_NAME, BRIDGING_HEADER_NAME, ENTITLEMENTS_NAME, infoPlistPath, bridgingHeaderPath, entitlementsPath, storyboardPath, resourceFile, currentProjectVersion, marketingVersion, configurations, key, buildSettingsObj;
         var _a;
         return __generator(this, function (_b) {
             extensionName = "ShareMenu";
@@ -122,38 +123,63 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                 (0, util_1.copyFileSync)(path.join(sourceDir, extFile), targetFile);
             }
             proj = config.modResults;
-            shareMenuKey = proj.addPbxGroup(extFiles, "ShareMenu", "ShareMenu").uuid;
+            shareMenuKey = proj.addPbxGroup([], SHARE_EXT_NAME, SHARE_EXT_NAME).uuid;
             groups = proj.hash.project.objects["PBXGroup"];
             Object.keys(groups).forEach(function (key) {
                 if (groups[key].name === undefined) {
                     proj.addToPbxGroup(shareMenuKey, key);
                 }
             });
-            target = proj.addTarget(extensionName, "app_extension", extensionName);
+            projObjects = proj.hash.project.objects;
+            projObjects["PBXTargetDependency"] =
+                projObjects["PBXTargetDependency"] || {};
+            projObjects["PBXContainerItemProxy"] =
+                projObjects["PBXTargetDependency"] || {};
+            if (!!proj.pbxTargetByName(SHARE_EXT_NAME)) {
+                console.log("\t".concat(SHARE_EXT_NAME, " already exists in project. Skipping..."));
+                return [2 /*return*/];
+            }
+            target = proj.addTarget(extensionName, "app_extension", extensionName, shareExtensionIdentifier);
             buildPath = "\"$(CONTENTS_FOLDER_PATH)/ShareMenu\"";
             // Add Shell build phase for check pods manifest
-            // proj.addBuildPhase(
-            //   [],
-            //   "PBXShellScriptBuildPhase",
-            //   "[CP] Check Pods Manifest.lock",
-            //   target.uuid,
-            //   {
-            //     shellPath: "/bin/sh",
-            //     shellScript: `"\"diff \"\${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"\${PODS_ROOT}/Manifest.lock\" > /dev/null\\nif [ $? != 0 ] ; then\\n    # print error to STDERR\\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\\n    exit 1\\nfi\\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\\necho \"SUCCESS\" > \"\${SCRIPT_OUTPUT_FILE_0}\"\\n"`,
-            //     // shellScript: `"\"\${PODS_ROOT}/Target Support Files/Pods-ShareMenu/Pods-ShareMenu-resources.sh\"\n"`,
-            //   },
-            //   buildPath
-            // );
+            proj.addBuildPhase([], "PBXShellScriptBuildPhase", "[CP] Check Pods Manifest.lock", target.uuid, {
+                inputPaths: [
+                    "\"${PODS_PODFILE_DIR_PATH}/Podfile.lock\"",
+                    "\"${PODS_ROOT}/Manifest.lock\"",
+                ],
+                outputPaths: [
+                    "\"$(DERIVED_FILE_DIR)/Pods-".concat(SHARE_EXT_NAME, "-checkManifestLockResult.txt\""),
+                ],
+                shellPath: "/bin/sh",
+                shellScript: "\"\"diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\\nif [ $? != 0 ] ; then\\n    # print error to STDERR\\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\\n    exit 1\\nfi\\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\\n\""
+            }, buildPath);
             // Build ShareViewController.swift in our extension target
             proj.addBuildPhase([], "PBXSourcesBuildPhase", "Sources", target.uuid);
             // Build phase for the MainInterface.storyboard in extension
-            proj.addBuildPhase(["MainInterface.storyboard"], "PBXResourcesBuildPhase", "Resources", target.uuid);
+            proj.addBuildPhase(["MainInterface.storyboard"], 
+            // [],
+            "PBXResourcesBuildPhase", "Resources", target.uuid);
             // Build phase for Framework
             proj.addBuildPhase([], "PBXFrameworksBuildPhase", "Frameworks", target.uuid);
             proj.addFramework("libPods-ShareMenu.a", { target: target.uuid });
-            infoPlistPath = path.join("ShareMenu-Info.plist");
-            bridgingHeaderPath = path.join("".concat(extensionName, "-Bridging-Header.h"));
-            entitlementsPath = path.join("".concat(extensionName, ".entitlements"));
+            // Add Shell build phase for copy pods resources
+            proj.addBuildPhase([], "PBXShellScriptBuildPhase", "[CP] Copy Pods Resources", target.uuid, {
+                inputPaths: [
+                    "\"${PODS_ROOT}/Target Support Files/Pods-".concat(SHARE_EXT_NAME, "/Pods-").concat(SHARE_EXT_NAME, "-resources.sh\""),
+                    "\"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/AccessibilityResources.bundle\"",
+                ],
+                outputPaths: [
+                    "\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AccessibilityResources.bundle\"",
+                ],
+                shellPath: "/bin/sh",
+                shellScript: "\"${PODS_ROOT}/Target Support Files/Pods-ShareMenu/Pods-".concat(SHARE_EXT_NAME, "-resources.sh\"\n\"")
+            }, buildPath);
+            PLIST_NAME = "ShareMenu-Info.plist";
+            BRIDGING_HEADER_NAME = "".concat(extensionName, "-Bridging-Header.h");
+            ENTITLEMENTS_NAME = "".concat(extensionName, ".entitlements");
+            infoPlistPath = path.join(shareMenuFolder, PLIST_NAME);
+            bridgingHeaderPath = path.join(shareMenuFolder, BRIDGING_HEADER_NAME);
+            entitlementsPath = path.join(shareMenuFolder, ENTITLEMENTS_NAME);
             storyboardPath = path.join("MainInterface.storyboard");
             // console.log(`\t!!!!react-native-share-menu-expo-plugin: ${infoPlistPath}`);
             // console.log(
@@ -164,11 +190,12 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
             // );
             // proj.addResourceFile(infoPlistPath, shareMenuKey);
             // proj.addHeaderFile(bridgingHeaderPath, [], shareMenuKey);
-            // proj.addFile(entitlementsPath, shareMenuKey);
-            // proj.addFile(infoPlistPath, shareMenuKey);
-            // proj.addFile(bridgingHeaderPath, shareMenuKey);
+            proj.addFile(ENTITLEMENTS_NAME, shareMenuKey);
+            proj.addFile(PLIST_NAME, shareMenuKey);
+            proj.addFile(BRIDGING_HEADER_NAME, shareMenuKey);
             // Add source files to our PbxGroup and our newly created PBXSourcesBuildPhase
             proj.addSourceFile("../../node_modules/ios/ShareViewController.swift", { target: target.uuid }, shareMenuKey);
+            resourceFile = proj.addResourceFile(storyboardPath, { target: target.uuid, variantGroup: true }, shareMenuKey);
             currentProjectVersion = config.ios.buildNumber || "1";
             marketingVersion = config.version;
             configurations = proj.pbxXCBuildConfigurationSection();
@@ -176,7 +203,7 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                 if (typeof configurations[key].buildSettings !== "undefined") {
                     buildSettingsObj = configurations[key].buildSettings;
                     if (typeof buildSettingsObj["PRODUCT_NAME"] !== "undefined" &&
-                        buildSettingsObj["PRODUCT_NAME"] === "\"$(TARGET_NAME)\"") {
+                        buildSettingsObj["PRODUCT_NAME"] === "\"".concat(SHARE_EXT_NAME, "\"")) {
                         buildSettingsObj["CLANG_ENABLE_MODULES"] = "YES";
                         buildSettingsObj["INFOPLIST_FILE"] = "\"".concat(infoPlistPath, "\"");
                         buildSettingsObj["CODE_SIGN_ENTITLEMENTS"] = "\"".concat(entitlementsPath, "\"");
@@ -189,7 +216,6 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                         buildSettingsObj["SWIFT_VERSION"] = "5.0";
                         buildSettingsObj["TARGETED_DEVICE_FAMILY"] = "\"1,2\"";
                         buildSettingsObj["SWIFT_OBJ_BRIDGING_HEADER"] = "\"".concat(bridgingHeaderPath, "\"");
-                        // TODO add bridging header
                     }
                 }
             }
@@ -304,7 +330,7 @@ var withShareMenuPodfile = function (config) {
                         tag: tag("ShareTarget"),
                         src: last(results).contents,
                         newSrc: indent([
-                            "target 'HelloWorldShare' do",
+                            "target '".concat(SHARE_EXT_NAME, "' do"),
                             "  use_react_native!",
                             "",
                             "  pod 'RNShareMenu', :path => '../node_modules/react-native-share-menu'",
