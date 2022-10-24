@@ -199,6 +199,7 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                     buildSettingsObj = configurations[key].buildSettings;
                     if (typeof buildSettingsObj["PRODUCT_NAME"] !== "undefined" &&
                         buildSettingsObj["PRODUCT_NAME"] === "\"".concat(SHARE_EXT_NAME, "\"")) {
+                        buildSettingsObj["DEVELOPMENT_TEAM"] = shareMenuProps.devTeam;
                         buildSettingsObj["CLANG_ENABLE_MODULES"] = "YES";
                         buildSettingsObj["INFOPLIST_FILE"] = "\"".concat(infoPlistPath, "\"");
                         buildSettingsObj["CODE_SIGN_ENTITLEMENTS"] = "\"".concat(entitlementsPath, "\"");
@@ -214,6 +215,9 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                     }
                 }
             }
+            // Add development teams to both app and share extension targets
+            proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam, shareMenuKey);
+            proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam);
             return [2 /*return*/, config];
         });
     }); });
@@ -278,7 +282,7 @@ var withShareMenuEntitlements = function (config) {
     return (0, config_plugins_2.withEntitlementsPlist)(config, function (config) {
         var _a;
         config.modResults["com.apple.security.application-groups"] = [
-            "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
+            "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || ""),
         ];
         return config;
     });
@@ -360,7 +364,7 @@ var withShareMenuExtensionEntitlements = function (config) {
                         filePath = path.join(shareMenuRootPath, "ShareMenu.entitlements");
                         shareMenu = {
                             "com.apple.security.application-groups": [
-                                "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || "", ".sharemenu"),
+                                "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || ""),
                             ]
                         };
                         return [4 /*yield*/, fs.mkdirSync(path.dirname(filePath), { recursive: true })];
@@ -374,12 +378,6 @@ var withShareMenuExtensionEntitlements = function (config) {
             });
         }); },
     ]);
-    // return withEntitlementsPlist(config, (config) => {
-    //   config.modResults["com.apple.security.application-groups"] = [
-    //     `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
-    //   ];
-    //   return config;
-    // });
 };
 var withShareMenuExtensionInfoPlist = function (config) {
     return (0, config_plugins_2.withDangerousMod)(config, [

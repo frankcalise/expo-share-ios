@@ -298,6 +298,7 @@ const withShareMenuExtensionTarget: ConfigPlugin<ShareMenuPluginProps> = (
           typeof buildSettingsObj["PRODUCT_NAME"] !== "undefined" &&
           buildSettingsObj["PRODUCT_NAME"] === `"${SHARE_EXT_NAME}"`
         ) {
+          buildSettingsObj["DEVELOPMENT_TEAM"] = shareMenuProps.devTeam;
           buildSettingsObj["CLANG_ENABLE_MODULES"] = "YES";
           buildSettingsObj["INFOPLIST_FILE"] = `"${infoPlistPath}"`;
           buildSettingsObj["CODE_SIGN_ENTITLEMENTS"] = `"${entitlementsPath}"`;
@@ -319,6 +320,14 @@ const withShareMenuExtensionTarget: ConfigPlugin<ShareMenuPluginProps> = (
         }
       }
     }
+
+    // Add development teams to both app and share extension targets
+    proj.addTargetAttribute(
+      "DevelopmentTeam",
+      shareMenuProps.devTeam,
+      shareMenuKey
+    );
+    proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam);
 
     return config;
   });
@@ -397,7 +406,7 @@ const withShareMenuAppDelegate: ConfigPlugin = (config) => {
 const withShareMenuEntitlements: ConfigPlugin = (config) => {
   return withEntitlementsPlist(config, (config) => {
     config.modResults["com.apple.security.application-groups"] = [
-      `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
+      `group.${config?.ios?.bundleIdentifier || ""}`,
     ];
     return config;
   });
@@ -505,7 +514,7 @@ const withShareMenuExtensionEntitlements: ConfigPlugin = (config) => {
 
       const shareMenu: InfoPlist = {
         "com.apple.security.application-groups": [
-          `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
+          `group.${config?.ios?.bundleIdentifier || ""}`,
         ],
       };
 
@@ -515,12 +524,6 @@ const withShareMenuExtensionEntitlements: ConfigPlugin = (config) => {
       return config;
     },
   ]);
-  // return withEntitlementsPlist(config, (config) => {
-  //   config.modResults["com.apple.security.application-groups"] = [
-  //     `group.${config?.ios?.bundleIdentifier || ""}.sharemenu`,
-  //   ];
-  //   return config;
-  // });
 };
 
 const withShareMenuExtensionInfoPlist: ConfigPlugin = (config) => {
