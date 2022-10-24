@@ -216,8 +216,13 @@ var withShareMenuExtensionTarget = function (config, shareMenuProps) {
                 }
             }
             // Add development teams to both app and share extension targets
-            proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam, shareMenuKey);
             proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam);
+            // TODO unsure how to add it to the share extension target
+            // proj.addTargetAttribute(
+            //   "DevelopmentTeam",
+            //   shareMenuProps.devTeam,
+            //   target.uuid
+            // );
             return [2 /*return*/, config];
         });
     }); });

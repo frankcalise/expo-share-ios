@@ -7,10 +7,8 @@ export default function App() {
   const [sharedData, setSharedData] = useState(null);
   const [sharedMimeType, setSharedMimeType] = useState(null);
 
-  console.log("rendering");
-
   const handleShare = useCallback((item) => {
-    console.log({ item });
+    console.log({ item: JSON.stringify(item) });
     if (!item) {
       return;
     }
