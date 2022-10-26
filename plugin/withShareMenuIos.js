@@ -36,16 +36,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.withShareMenuIos = exports.getProjectShareMenuName = void 0;
+exports.withShareMenuIos = exports.getProjectShareMenuName = exports.SHARE_EXT_NAME = void 0;
 var config_plugins_1 = require("@expo/config-plugins");
 var plist_1 = require("@expo/plist");
 var generateCode_1 = require("@expo/config-plugins/build/utils/generateCode");
 var config_plugins_2 = require("@expo/config-plugins");
 var fs = require("fs");
 var path = require("path");
-var util_1 = require("./util");
+var withShareMenuExtensionTarget_1 = require("./withShareMenuExtensionTarget");
 // constants
-var SHARE_EXT_NAME = "ShareMenu";
+exports.SHARE_EXT_NAME = "ShareMenu";
 var SHARE_MENU_TAG = "react-native-share-menu";
 // TODO make anchor take in the project name
 var IOS_HAS_SHARE_MENU_TARGET = /target 'ExpoPlistShare' do/gm;
@@ -84,137 +84,12 @@ var withShareMenuIos = function (config, props) {
     config = withShareMenuPodfile(config);
     config = withShareMenuAppDelegate(config);
     // share extension target
-    config = withShareMenuExtensionTarget(config, props);
+    config = (0, withShareMenuExtensionTarget_1.withShareMenuExtensionTarget)(config, props);
     config = withShareMenuExtensionEntitlements(config);
     config = withShareMenuExtensionInfoPlist(config);
     return config;
 };
 exports.withShareMenuIos = withShareMenuIos;
-var withShareMenuExtensionTarget = function (config, shareMenuProps) {
-    return (0, config_plugins_1.withXcodeProject)(config, function (config) { return __awaiter(void 0, void 0, void 0, function () {
-        var appIdentifier, shareExtensionIdentifier, shareMenuFolder, iosPath, sourceDir, extFiles, i, extFile, targetFile, proj, shareMenuKey, groups, projObjects, target, buildPath, STORYBOARD_NAME, storyboardPath, PLIST_NAME, BRIDGING_HEADER_NAME, ENTITLEMENTS_NAME, infoPlistPath, bridgingHeaderPath, entitlementsPath, variantKey, currentProjectVersion, marketingVersion, configurations, key, buildSettingsObj;
-        var _a;
-        return __generator(this, function (_b) {
-            appIdentifier = (_a = config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier;
-            shareExtensionIdentifier = "".concat(appIdentifier, ".").concat(SHARE_EXT_NAME.toLowerCase());
-            shareMenuFolder = SHARE_EXT_NAME;
-            iosPath = config.modRequest.platformProjectRoot;
-            sourceDir = "".concat(config.modRequest.projectRoot, "/plugin/extensionFiles/");
-            extFiles = [
-                "MainInterface.storyboard",
-                "".concat(SHARE_EXT_NAME, "-Bridging-Header.h"),
-            ];
-            /* COPY OVER EXTENSION FILES */
-            fs.mkdirSync("".concat(iosPath, "/").concat(shareMenuFolder), { recursive: true });
-            for (i = 0; i < extFiles.length; i++) {
-                extFile = extFiles[i];
-                targetFile = "".concat(iosPath, "/").concat(shareMenuFolder, "/").concat(extFile);
-                (0, util_1.copyFileSync)(path.join(sourceDir, extFile), targetFile);
-            }
-            proj = config.modResults;
-            shareMenuKey = proj.pbxCreateGroup(SHARE_EXT_NAME, SHARE_EXT_NAME);
-            groups = proj.hash.project.objects["PBXGroup"];
-            Object.keys(groups).forEach(function (key) {
-                if (groups[key].name === undefined) {
-                    proj.addToPbxGroup(shareMenuKey, key);
-                }
-            });
-            projObjects = proj.hash.project.objects;
-            projObjects["PBXTargetDependency"] =
-                projObjects["PBXTargetDependency"] || {};
-            projObjects["PBXContainerItemProxy"] =
-                projObjects["PBXTargetDependency"] || {};
-            if (!!proj.pbxTargetByName(SHARE_EXT_NAME)) {
-                console.log("\t".concat(SHARE_EXT_NAME, " already exists in project. Skipping..."));
-                return [2 /*return*/];
-            }
-            target = proj.addTarget(SHARE_EXT_NAME, "app_extension", SHARE_EXT_NAME, shareExtensionIdentifier);
-            buildPath = "\"$(CONTENTS_FOLDER_PATH)/".concat(SHARE_EXT_NAME, "\"");
-            // Add Shell build phase for check pods manifest
-            proj.addBuildPhase([], "PBXShellScriptBuildPhase", "[CP] Check Pods Manifest.lock", target.uuid, {
-                inputPaths: [
-                    "\"${PODS_PODFILE_DIR_PATH}/Podfile.lock\"",
-                    "\"${PODS_ROOT}/Manifest.lock\"",
-                ],
-                outputPaths: [
-                    "\"$(DERIVED_FILE_DIR)/Pods-".concat(SHARE_EXT_NAME, "-checkManifestLockResult.txt\""),
-                ],
-                shellPath: "/bin/sh",
-                shellScript: "\"\"diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\\nif [ $? != 0 ] ; then\\n    # print error to STDERR\\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\\n    exit 1\\nfi\\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\\n\""
-            }, buildPath);
-            // Build ShareViewController.swift in our extension target
-            proj.addBuildPhase([], "PBXSourcesBuildPhase", "Sources", target.uuid);
-            STORYBOARD_NAME = "MainInterface.storyboard";
-            storyboardPath = path.join(STORYBOARD_NAME);
-            proj.addBuildPhase([], "PBXResourcesBuildPhase", "Resources", target.uuid);
-            // Build phase for Framework
-            proj.addBuildPhase([], "PBXFrameworksBuildPhase", "Frameworks", target.uuid);
-            proj.addFramework("libPods-".concat(SHARE_EXT_NAME, ".a"), { target: target.uuid });
-            // Add Shell build phase for copy pods resources
-            proj.addBuildPhase([], "PBXShellScriptBuildPhase", "[CP] Copy Pods Resources", target.uuid, {
-                inputPaths: [
-                    "\"${PODS_ROOT}/Target Support Files/Pods-".concat(SHARE_EXT_NAME, "/Pods-").concat(SHARE_EXT_NAME, "-resources.sh\""),
-                    "\"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/AccessibilityResources.bundle\"",
-                ],
-                outputPaths: [
-                    "\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AccessibilityResources.bundle\"",
-                ],
-                shellPath: "/bin/sh",
-                shellScript: "\"${PODS_ROOT}/Target Support Files/Pods-".concat(SHARE_EXT_NAME, "/Pods-").concat(SHARE_EXT_NAME, "-resources.sh\"\n\"")
-            }, buildPath);
-            PLIST_NAME = "".concat(SHARE_EXT_NAME, "-Info.plist");
-            BRIDGING_HEADER_NAME = "".concat(SHARE_EXT_NAME, "-Bridging-Header.h");
-            ENTITLEMENTS_NAME = "".concat(SHARE_EXT_NAME, ".entitlements");
-            infoPlistPath = path.join(shareMenuFolder, PLIST_NAME);
-            bridgingHeaderPath = path.join(shareMenuFolder, BRIDGING_HEADER_NAME);
-            entitlementsPath = path.join(shareMenuFolder, ENTITLEMENTS_NAME);
-            proj.addFile(ENTITLEMENTS_NAME, shareMenuKey);
-            proj.addFile(PLIST_NAME, shareMenuKey);
-            proj.addFile(BRIDGING_HEADER_NAME, shareMenuKey);
-            // Add source files to our PbxGroup and our newly created PBXSourcesBuildPhase
-            proj.addSourceFile("../../node_modules/react-native-share-menu/ios/ShareViewController.swift", { target: target.uuid }, shareMenuKey);
-            variantKey = proj.pbxCreateVariantGroup(STORYBOARD_NAME);
-            //  Add the resource file and include it into the target PbxResourcesBuildPhase and PbxGroup
-            proj.addResourceFile(storyboardPath, {
-                target: target.uuid,
-                lastKnownFileType: "file.storyboard"
-            }, shareMenuKey);
-            currentProjectVersion = config.ios.buildNumber || "1";
-            marketingVersion = config.version;
-            configurations = proj.pbxXCBuildConfigurationSection();
-            for (key in configurations) {
-                if (typeof configurations[key].buildSettings !== "undefined") {
-                    buildSettingsObj = configurations[key].buildSettings;
-                    if (typeof buildSettingsObj["PRODUCT_NAME"] !== "undefined" &&
-                        buildSettingsObj["PRODUCT_NAME"] === "\"".concat(SHARE_EXT_NAME, "\"")) {
-                        buildSettingsObj["DEVELOPMENT_TEAM"] = shareMenuProps.devTeam;
-                        buildSettingsObj["CLANG_ENABLE_MODULES"] = "YES";
-                        buildSettingsObj["INFOPLIST_FILE"] = "\"".concat(infoPlistPath, "\"");
-                        buildSettingsObj["CODE_SIGN_ENTITLEMENTS"] = "\"".concat(entitlementsPath, "\"");
-                        buildSettingsObj["CODE_SIGN_STYLE"] = "Automatic";
-                        buildSettingsObj["CURRENT_PROJECT_VERSION"] = "\"".concat(currentProjectVersion, "\"");
-                        buildSettingsObj["GENERATE_INFOPLIST_FILE"] = "YES";
-                        buildSettingsObj["MARKETING_VERSION"] = "\"".concat(marketingVersion, "\"");
-                        buildSettingsObj["PRODUCT_BUNDLE_IDENTIFIER"] = "\"".concat(shareExtensionIdentifier, "\"");
-                        buildSettingsObj["SWIFT_EMIT_LOC_STRINGS"] = "YES";
-                        buildSettingsObj["SWIFT_VERSION"] = "5.0";
-                        buildSettingsObj["TARGETED_DEVICE_FAMILY"] = "\"1,2\"";
-                        buildSettingsObj["SWIFT_OBJ_BRIDGING_HEADER"] = "\"".concat(bridgingHeaderPath, "\"");
-                    }
-                }
-            }
-            // Add development teams to both app and share extension targets
-            proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam);
-            // TODO unsure how to add it to the share extension target
-            // proj.addTargetAttribute(
-            //   "DevelopmentTeam",
-            //   shareMenuProps.devTeam,
-            //   target.uuid
-            // );
-            return [2 /*return*/, config];
-        });
-    }); });
-};
 // this gives TS error? change to function signature
 // const addShareMenuAppDelegateImport: MergeResults = (src: string) => {
 function addShareMenuAppDelegateImport(src) {
@@ -323,7 +198,7 @@ var withShareMenuPodfile = function (config) {
                         tag: tag("ShareTarget"),
                         src: last(results).contents,
                         newSrc: indent([
-                            "target '".concat(SHARE_EXT_NAME, "' do"),
+                            "target '".concat(exports.SHARE_EXT_NAME, "' do"),
                             "  use_react_native!",
                             "",
                             "  pod 'RNShareMenu', :path => '../node_modules/react-native-share-menu'",
@@ -353,8 +228,8 @@ var withShareMenuExtensionEntitlements = function (config) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, SHARE_EXT_NAME);
-                        filePath = path.join(shareMenuRootPath, "".concat(SHARE_EXT_NAME, ".entitlements"));
+                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, exports.SHARE_EXT_NAME);
+                        filePath = path.join(shareMenuRootPath, "".concat(exports.SHARE_EXT_NAME, ".entitlements"));
                         shareMenu = {
                             "com.apple.security.application-groups": [
                                 "group.".concat(((_a = config === null || config === void 0 ? void 0 : config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier) || ""),
@@ -381,13 +256,13 @@ var withShareMenuExtensionInfoPlist = function (config) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, SHARE_EXT_NAME);
-                        filePath = path.join(shareMenuRootPath, "".concat(SHARE_EXT_NAME, "-Info.plist"));
+                        shareMenuRootPath = path.join(config.modRequest.platformProjectRoot, exports.SHARE_EXT_NAME);
+                        filePath = path.join(shareMenuRootPath, "".concat(exports.SHARE_EXT_NAME, "-Info.plist"));
                         appIdentifier = (_a = config.ios) === null || _a === void 0 ? void 0 : _a.bundleIdentifier;
                         shareMenu = {
                             HostAppBundleIdentifier: "".concat(appIdentifier),
                             HostAppURLScheme: "".concat(appIdentifier, "://"),
-                            CFBundleDisplayName: "".concat(config.modRequest.projectName || "", " ").concat(SHARE_EXT_NAME),
+                            CFBundleDisplayName: "".concat(config.modRequest.projectName || "", " ").concat(exports.SHARE_EXT_NAME),
                             NSExtension: {
                                 NSExtensionAttributes: {
                                     NSExtensionActivationRule: {
