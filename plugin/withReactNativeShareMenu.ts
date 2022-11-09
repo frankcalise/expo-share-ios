@@ -6,7 +6,8 @@ import { withShareMenuIos } from "./withShareMenuIos";
 export type ShareMenuPluginProps = {
   // (iOS only) Development Team ID and deployment target
   devTeam: string;
-  iPhoneDeploymentTarget: string;
+  shareTarget: string;
+  shareScheme: string;
 };
 
 // helpers

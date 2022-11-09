@@ -3,37 +3,22 @@ import { ConfigPlugin, withXcodeProject } from "@expo/config-plugins";
 import * as fs from "fs";
 import * as path from "path";
 import { copyFileSync } from "./util";
-import { ShareMenuPluginProps } from "./withReactNativeShareMenu";
-import { SHARE_EXT_NAME } from "./withShareMenuIos";
+import { ShareMenuOptions, SHARE_EXT_NAME } from "./withShareMenuIos";
 
-export const withShareMenuExtensionTarget: ConfigPlugin<
-  ShareMenuPluginProps
-> = (config, shareMenuProps) => {
-  return withXcodeProject(config, async (config) => {
+export const withShareMenuExtensionTarget: ConfigPlugin<ShareMenuOptions> = (
+  config,
+  options
+) => {
+  return withXcodeProject(config, (config) => {
     const appIdentifier = config.ios?.bundleIdentifier!;
     const shareExtensionIdentifier = `${appIdentifier}.${SHARE_EXT_NAME.toLowerCase()}`;
 
-    // support for monorepos where node_modules can be up to 5 parents
-    // above the project directory.
-    // let dir = "node_modules";
-    // for (let x = 0; x < 5 && !FfileManager.dirExists(dir); x++) {
-    //   dir = "../" + dir;
-    // }
-    // addShareMenuExtensionTarget(
-    //   config,
-    //   config.modRequest.projectName || "",
-    //   options,
-    //   `${config.modRequest.projectRoot}/plugin/extensionFiles/`
-    // );
-
     const shareMenuFolder = SHARE_EXT_NAME;
+    const STORYBOARD_NAME = `MainInterface.storyboard`;
     const iosPath = config.modRequest.platformProjectRoot;
-    const sourceDir = `${config.modRequest.projectRoot}/plugin/extensionFiles/`;
+    const sourceDir = `${iosPath}/../../../packages/react-native-share-menu/build/extensionFiles/`;
 
-    const extFiles = [
-      "MainInterface.storyboard",
-      `${SHARE_EXT_NAME}-Bridging-Header.h`,
-    ];
+    const extFiles = [STORYBOARD_NAME, `${SHARE_EXT_NAME}-Bridging-Header.h`];
 
     /* COPY OVER EXTENSION FILES */
     fs.mkdirSync(`${iosPath}/${shareMenuFolder}`, { recursive: true });
@@ -47,11 +32,6 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
     const proj = config.modResults;
 
     const shareMenuKey = proj.pbxCreateGroup(SHARE_EXT_NAME, SHARE_EXT_NAME);
-    // const { uuid: shareMenuKey } = proj.addPbxGroup(
-    //   ["MainInterface.storyboard"],
-    //   SHARE_EXT_NAME,
-    //   SHARE_EXT_NAME
-    // );
 
     // Add the new PBXGroup to the top level group. This makes the
     // files / folder appear in the file explorer in Xcode.
@@ -72,10 +52,11 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
     projObjects["PBXContainerItemProxy"] =
       projObjects["PBXTargetDependency"] || {};
 
-    if (!!proj.pbxTargetByName(SHARE_EXT_NAME)) {
-      console.log(`\t${SHARE_EXT_NAME} already exists in project. Skipping...`);
-      return;
-    }
+    // TODO safety mechanism if target already exists, do we want to delete it before starting, etc
+    // if (!!proj.pbxTargetByName(SHARE_EXT_NAME)) {
+    //   console.log(`\t${SHARE_EXT_NAME} already exists in project. Skipping...`);
+    //   return;
+    // }
 
     // Adds the PBXNativeTarget to the project
     const target = proj.addTarget(
@@ -114,8 +95,6 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
     proj.addBuildPhase([], "PBXSourcesBuildPhase", "Sources", target.uuid);
 
     // Build phase for the MainInterface.storyboard in extension
-    const STORYBOARD_NAME = `MainInterface.storyboard`;
-    const storyboardPath = path.join(STORYBOARD_NAME);
     proj.addBuildPhase([], "PBXResourcesBuildPhase", "Resources", target.uuid);
 
     // Build phase for Framework
@@ -155,19 +134,36 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
     const infoPlistPath = path.join(shareMenuFolder, PLIST_NAME);
     const bridgingHeaderPath = path.join(shareMenuFolder, BRIDGING_HEADER_NAME);
     const entitlementsPath = path.join(shareMenuFolder, ENTITLEMENTS_NAME);
+    const storyboardPath = path.join(STORYBOARD_NAME);
 
     proj.addFile(ENTITLEMENTS_NAME, shareMenuKey);
     proj.addFile(PLIST_NAME, shareMenuKey);
     proj.addFile(BRIDGING_HEADER_NAME, shareMenuKey);
 
     // Add source files to our PbxGroup and our newly created PBXSourcesBuildPhase
+    const shareViewControllerPath = path.join(
+      "../../",
+      options.nodeModulesDir,
+      "ios/ShareViewController.swift"
+    );
+    // ENABLE-CUSTOM-UI
+    // const reactShareViewControllerPath = path.join(
+    //   '../../',
+    //   options.nodeModulesDir,
+    //   'ios/ReactShareViewController.swift',
+    // );
+
     proj.addSourceFile(
-      "../../node_modules/react-native-share-menu/ios/ShareViewController.swift",
+      shareViewControllerPath,
       { target: target.uuid },
       shareMenuKey
     );
-
-    const variantKey = proj.pbxCreateVariantGroup(STORYBOARD_NAME);
+    // ENABLE-CUSTOM-UI
+    // proj.addSourceFile(
+    //   reactShareViewControllerPath,
+    //   { target: target.uuid },
+    //   shareMenuKey,
+    // );
 
     //  Add the resource file and include it into the target PbxResourcesBuildPhase and PbxGroup
     proj.addResourceFile(
@@ -179,7 +175,9 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
       shareMenuKey
     );
 
-    // TODO figure this one out
+    // TODO figure this one out - although end result didn't seem to be necessary
+    // this was to mimic the manual by hand changes
+    // const variantKey = proj.pbxCreateVariantGroup(STORYBOARD_NAME)
     // proj.addToPbxVariantGroup(resourceFile, variantKey);
     // proj.addToPbxVariantGroup(resourceFile, shareMenuKey);
 
@@ -194,7 +192,7 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
           typeof buildSettingsObj["PRODUCT_NAME"] !== "undefined" &&
           buildSettingsObj["PRODUCT_NAME"] === `"${SHARE_EXT_NAME}"`
         ) {
-          buildSettingsObj["DEVELOPMENT_TEAM"] = shareMenuProps.devTeam;
+          buildSettingsObj["DEVELOPMENT_TEAM"] = options.devTeam;
           buildSettingsObj["CLANG_ENABLE_MODULES"] = "YES";
           buildSettingsObj["INFOPLIST_FILE"] = `"${infoPlistPath}"`;
           buildSettingsObj["CODE_SIGN_ENTITLEMENTS"] = `"${entitlementsPath}"`;
@@ -217,15 +215,16 @@ export const withShareMenuExtensionTarget: ConfigPlugin<
       }
     }
 
+    // This should be handled by EAS itself?
     // Add development teams to both app and share extension targets
-    proj.addTargetAttribute("DevelopmentTeam", shareMenuProps.devTeam);
+    // proj.addTargetAttribute('DevelopmentTeam', options.devTeam);
+
     // TODO unsure how to add it to the share extension target
     // proj.addTargetAttribute(
     //   "DevelopmentTeam",
-    //   shareMenuProps.devTeam,
+    //   options.devTeam,
     //   target.uuid
     // );
-
     return config;
   });
 };
